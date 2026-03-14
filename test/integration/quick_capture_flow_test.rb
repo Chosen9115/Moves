@@ -22,15 +22,14 @@ class QuickCaptureFlowTest < ActionDispatch::IntegrationTest
     assert_equal "Monex Migration", move.campaign.name
   end
 
-  test "capture plus clarify redirects to edit screen" do
+  test "capture with redirect_to sends to specified path" do
     post moves_path, params: {
       move: {
         title: "Draft NDA"
       },
-      post_capture: "clarify"
+      redirect_to: inbox_path
     }
 
-    move = Move.order(:created_at).last
-    assert_redirected_to edit_move_path(move)
+    assert_redirected_to inbox_path
   end
 end
