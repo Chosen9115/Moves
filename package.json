@@ -1,0 +1,42 @@
+{
+  "name": "moves-desktop",
+  "version": "0.1.0",
+  "description": "Moves desktop wrapper for Rails app",
+  "main": "electron/main.js",
+  "license": "UNLICENSED",
+  "scripts": {
+    "desktop:dev": "electron .",
+    "desktop:build:dmg": "electron-builder --mac dmg --publish never",
+    "desktop:build": "electron-builder --mac dmg zip --publish never"
+  },
+  "devDependencies": {
+    "electron": "^36.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.moves.desktop",
+    "productName": "Moves",
+    "asar": false,
+    "files": [
+      "app/**/*",
+      "bin/**/*",
+      "config/**/*",
+      "db/**/*",
+      "lib/**/*",
+      "public/**/*",
+      "vendor/**/*",
+      "electron/**/*",
+      "Gemfile",
+      "Gemfile.lock",
+      "Rakefile",
+      "config.ru"
+    ],
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "identity": null,
+      "category": "public.app-category.productivity"
+    }
+  }
+}

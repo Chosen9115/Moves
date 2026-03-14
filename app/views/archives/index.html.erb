@@ -1,0 +1,23 @@
+<div class="page-header">
+  <span class="page-header-title">Archive</span>
+</div>
+
+<div class="page-content">
+
+  <div class="section-gap">
+    <div class="section-label">
+      Completed
+      <span class="section-label-count"><%= @completed_moves.size %></span>
+    </div>
+    <%= render "moves/move_table", moves: @completed_moves %>
+  </div>
+
+  <div class="section-gap">
+    <div class="section-label">
+      Archived
+      <span class="section-label-count"><%= @archived_moves.size %></span>
+    </div>
+    <%= render "moves/move_table", moves: @archived_moves %>
+  </div>
+
+</div>

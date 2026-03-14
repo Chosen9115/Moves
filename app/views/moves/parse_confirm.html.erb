@@ -1,0 +1,100 @@
+<div class="page-header">
+  <span class="page-header-title">Review parsed move</span>
+</div>
+
+<div class="page-content">
+  <div style="max-width: 640px; margin: 0 auto;">
+
+    <%# ── Understood / Missing badges ── %>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;">
+      <% @understood.each do |field| %>
+        <span class="badge badge-green"><%= field.humanize %></span>
+      <% end %>
+      <% @missing.each do |field| %>
+        <span class="badge badge-amber"><%= field.humanize %> (guessed)</span>
+      <% end %>
+    </div>
+
+    <%# ── Original text ── %>
+    <details style="margin-bottom:20px;">
+      <summary style="font-size:12px; color:var(--muted); cursor:pointer;">Show original text</summary>
+      <div style="margin-top:8px; padding:12px 14px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; color:var(--ink-2); line-height:1.6; white-space:pre-wrap;"><%= @raw_text %></div>
+    </details>
+
+    <%# ── Editable form ── %>
+    <%= form_with model: @move, url: moves_path, data: { turbo: false } do |f| %>
+      <%= f.hidden_field :stage, value: :inbox %>
+      <%= hidden_field_tag :redirect_to, inbox_path %>
+
+      <div class="field">
+        <%= f.label :title, "Move" %>
+        <%= f.text_field :title, required: true %>
+      </div>
+
+      <div class="field">
+        <%= f.label :campaign_id, "Campaign" %>
+        <select name="move[campaign_id]" id="move_campaign_id" onchange="if(this.value==='__new__'){this.style.display='none';document.getElementById('new-campaign-row').style.display='flex';}">
+          <option value="">No campaign</option>
+          <% Campaign.order(:name).each do |c| %>
+            <option value="<%= c.id %>" <%= 'selected' if c.name == @campaign_name %>><%= c.name %></option>
+          <% end %>
+          <option value="__new__">+ New campaign...</option>
+        </select>
+        <div id="new-campaign-row" style="<%= @campaign_name.present? && Campaign.find_by(name: @campaign_name).nil? ? '' : 'display:none;' %> margin-top:6px; gap:8px; align-items:center;">
+          <%= f.text_field :campaign_name, value: (@campaign_name unless Campaign.find_by(name: @campaign_name)), placeholder: "New campaign name", style: "flex:1;" %>
+        </div>
+      </div>
+
+      <div class="field">
+        <%= f.label :success_definition, "What success looks like" %>
+        <%= f.text_area :success_definition, rows: 2 %>
+      </div>
+
+      <div class="grid two">
+        <div class="field">
+          <%= f.label :payoff_value_raw, "Dollar value" %>
+          <div style="position:relative;">
+            <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:14px; pointer-events:none;">$</span>
+            <%= f.number_field :payoff_value_raw, min: 0, step: "any", style: "padding-left:26px;" %>
+          </div>
+        </div>
+        <div class="field">
+          <%= f.label :payoff_value_normalized, "Or relative scale" %>
+          <%= f.select :payoff_value_normalized,
+              [["\u2014", ""], ["Tiny (1)", 1], ["Small (2)", 2], ["Meaningful (3)", 3], ["Strong (5)", 5], ["Major (8)", 8], ["Transformative (13)", 13]],
+              {}, {} %>
+        </div>
+      </div>
+
+      <div class="grid two">
+        <div class="field">
+          <%= f.label :subjective_probability, "Probability" %>
+          <%= f.select :subjective_probability, probability_options.map { |n| ["#{n}%", n] }, include_blank: "Pick probability" %>
+        </div>
+        <div class="field">
+          <%= f.label :effort_minutes, "Effort" %>
+          <%= f.select :effort_minutes, effort_options.map { |n| [n >= 60 ? "#{n / 60}h" : "#{n}m", n] }, include_blank: "Pick effort" %>
+        </div>
+      </div>
+
+      <div class="grid two">
+        <div class="field">
+          <%= f.label :due_date %>
+          <%= f.date_field :due_date %>
+        </div>
+        <div></div>
+      </div>
+
+      <div class="field">
+        <%= f.label :notes %>
+        <%= f.text_area :notes, rows: 3 %>
+      </div>
+
+      <div class="form-actions" style="margin-top:8px;">
+        <%= f.submit "Save move", class: "btn btn-primary btn-lg" %>
+        <%= link_to "Re-parse", parse_moves_path, class: "btn btn-ghost" %>
+        <%= link_to "Cancel", inbox_path, class: "btn btn-ghost" %>
+      </div>
+    <% end %>
+  </div>
+</div>

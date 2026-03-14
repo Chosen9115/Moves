@@ -1,0 +1,15 @@
+positive_reply:
+  uuid: 3b7fcb9d-3333-4e4c-a333-66f7b2f30001
+  move: atl_pitch
+  signal_type: Positive reply
+  note: Ops lead replied quickly
+  direction: positive
+  magnitude: medium
+
+stale_no_response:
+  uuid: 3b7fcb9d-3333-4e4c-a333-66f7b2f30002
+  move: cabalo_followup
+  signal_type: No response
+  note: 10 days with no reply
+  direction: negative
+  magnitude: low

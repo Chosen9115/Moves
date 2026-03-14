@@ -1,0 +1,244 @@
+<div class="page-header wizard-header">
+  <a href="javascript:history.back()" class="btn btn-ghost btn-sm wizard-back-btn">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Back
+  </a>
+  <span class="page-header-title" style="font-size:14px; font-weight:500;">New move</span>
+  <%= link_to "Cancel", moves_path, class: "btn btn-ghost btn-sm" %>
+</div>
+
+<div class="wizard-stage" data-controller="wizard">
+  <%= form_with model: @move, url: moves_path, html: { id: "wizard-form" } do |f| %>
+
+    <%# ── Step 1: Title ───────────────────────────────────── %>
+    <div class="wizard-step wizard-step-active" data-wizard-target="step">
+      <div class="wizard-card">
+        <div class="wizard-progress">
+          <div class="wizard-dot active" data-wizard-target="progress"></div>
+          <div class="wizard-dot" data-wizard-target="progress"></div>
+          <div class="wizard-dot" data-wizard-target="progress"></div>
+          <div class="wizard-dot" data-wizard-target="progress"></div>
+          <span class="wizard-step-label">Step 1 of 4</span>
+        </div>
+        <div class="wizard-heading">
+          <h2 class="wizard-question">What's the move?</h2>
+          <p class="wizard-hint">One clear action you can take. Be specific.</p>
+        </div>
+        <%= f.text_field :title,
+            required: true,
+            placeholder: "Book a pilot intro with Cabalo ops lead",
+            class: "wizard-input",
+            autocomplete: "off",
+            data: { "wizard-primary": true } %>
+        <div class="wizard-chips">
+          <span class="wizard-chip" data-action="click->wizard#chipSelect" data-chip-text="Follow up with Monex on timeline">Follow up with Monex on timeline</span>
+          <span class="wizard-chip" data-action="click->wizard#chipSelect" data-chip-text="Send NDA to ATL legal team">Send NDA to ATL legal team</span>
+          <span class="wizard-chip" data-action="click->wizard#chipSelect" data-chip-text="Fix payout flow copy">Fix payout flow copy</span>
+        </div>
+        <div class="wizard-footer">
+          <span class="wizard-enter-hint">↵ Enter to continue</span>
+          <button type="button" class="btn btn-dark btn-lg" data-action="wizard#next">Continue →</button>
+        </div>
+      </div>
+    </div>
+
+    <%# ── Step 2: Context + Value ─────────────────────────── %>
+    <div class="wizard-step wizard-step-hidden" data-wizard-target="step">
+      <div class="wizard-card">
+        <div class="wizard-progress">
+          <div class="wizard-dot done" data-wizard-target="progress"></div>
+          <div class="wizard-dot active" data-wizard-target="progress"></div>
+          <div class="wizard-dot" data-wizard-target="progress"></div>
+          <div class="wizard-dot" data-wizard-target="progress"></div>
+          <span class="wizard-step-label">Step 2 of 4</span>
+        </div>
+        <div class="wizard-heading">
+          <h2 class="wizard-question">Add context.</h2>
+          <p class="wizard-hint">Help the system understand the move.</p>
+        </div>
+
+        <div class="wizard-field">
+          <%= f.label :campaign_id, "Campaign", class: "wizard-label" %>
+          <%= f.collection_select :campaign_id, Campaign.order(:name), :id, :name,
+              { include_blank: "No campaign" },
+              { class: "wizard-select" } %>
+        </div>
+
+        <div class="wizard-field">
+          <%= f.label :success_definition, "Success looks like…", class: "wizard-label" %>
+          <%= f.text_area :success_definition,
+              placeholder: "Pilot meeting booked with ops lead",
+              class: "wizard-textarea",
+              rows: 2,
+              data: { "wizard-primary": true } %>
+        </div>
+
+        <div class="wizard-field">
+          <div class="wizard-label">Potential value <span class="wizard-label-optional">optional</span></div>
+          <div class="wizard-value-row">
+            <div class="wizard-money-input">
+              <span class="wizard-money-prefix">$</span>
+              <%= f.number_field :payoff_value_raw,
+                  placeholder: "50,000",
+                  min: 0,
+                  step: "any",
+                  class: "wizard-money-field",
+                  data: { "raw-input": true, action: "input->wizard#rawInputChanged" } %>
+            </div>
+            <span class="wizard-or">or</span>
+            <div class="wizard-scale-group" data-wizard-scale-group>
+              <% [["Tiny", 1], ["Small", 2], ["Meaningful", 3], ["Strong", 5], ["Major", 8], ["Transformative", 13]].each do |label, val| %>
+                <button type="button" class="wizard-scale-btn" data-value="<%= val %>" data-action="wizard#selectScale"><%= label %></button>
+              <% end %>
+            </div>
+            <%= f.hidden_field :payoff_value_normalized, data: { "scale-input": true } %>
+          </div>
+        </div>
+
+        <div class="wizard-footer">
+          <button type="button" class="wizard-skip" data-action="wizard#skip">Skip →</button>
+          <button type="button" class="btn btn-dark btn-lg" data-action="wizard#next">Continue →</button>
+        </div>
+      </div>
+    </div>
+
+    <%# ── Step 3: Probability + Effort ────────────────────── %>
+    <div class="wizard-step wizard-step-hidden" data-wizard-target="step">
+      <div class="wizard-card">
+        <div class="wizard-progress">
+          <div class="wizard-dot done" data-wizard-target="progress"></div>
+          <div class="wizard-dot done" data-wizard-target="progress"></div>
+          <div class="wizard-dot active" data-wizard-target="progress"></div>
+          <div class="wizard-dot" data-wizard-target="progress"></div>
+          <span class="wizard-step-label">Step 3 of 4</span>
+        </div>
+        <div class="wizard-heading">
+          <h2 class="wizard-question">Calibrate this move.</h2>
+          <p class="wizard-hint">What's the probability it lands? How much effort does it need?</p>
+        </div>
+
+        <div class="wizard-field">
+          <div class="wizard-label">Probability of success</div>
+          <div class="wizard-choice-group" data-wizard-prob-group>
+            <% Move::PROBABILITY_SCALE.each do |val| %>
+              <button type="button" class="wizard-choice-btn" data-value="<%= val %>" data-action="wizard#selectProb"><%= val %>%</button>
+            <% end %>
+          </div>
+          <%= f.hidden_field :subjective_probability, data: { "prob-input": true } %>
+        </div>
+
+        <div class="wizard-field">
+          <div class="wizard-label">Effort required</div>
+          <div class="wizard-choice-group" data-wizard-effort-group>
+            <% [[10,"10 min"],[30,"30 min"],[60,"1 hr"],[120,"2 hr"],[240,"4 hr"],[480,"1 day"]].each do |val, label| %>
+              <button type="button" class="wizard-choice-btn" data-value="<%= val %>" data-action="wizard#selectEffort"><%= label %></button>
+            <% end %>
+          </div>
+          <%= f.hidden_field :effort_minutes, data: { "effort-input": true } %>
+        </div>
+
+        <div class="wizard-footer">
+          <button type="button" class="wizard-skip" data-action="wizard#skip">Skip →</button>
+          <button type="button" class="btn btn-dark btn-lg" data-action="wizard#next">Continue →</button>
+        </div>
+      </div>
+    </div>
+
+    <%# ── Step 4: Review + Save ───────────────────────────── %>
+    <div class="wizard-step wizard-step-hidden" data-wizard-target="step">
+      <div class="wizard-card wizard-result-card">
+        <div class="wizard-progress">
+          <div class="wizard-dot done" data-wizard-target="progress"></div>
+          <div class="wizard-dot done" data-wizard-target="progress"></div>
+          <div class="wizard-dot done" data-wizard-target="progress"></div>
+          <div class="wizard-dot active" data-wizard-target="progress"></div>
+          <span class="wizard-step-label">Step 4 of 4</span>
+        </div>
+
+        <div class="wizard-result-header">
+          <div class="wizard-result-label">Ready to save</div>
+          <p class="wizard-hint" style="margin:0;">Your move is captured. The system will score it once saved.</p>
+        </div>
+
+        <%# Summary of what's been entered %>
+        <div class="wizard-summary">
+          <div class="wizard-summary-row">
+            <span class="wizard-summary-key">Move</span>
+            <span class="wizard-summary-val" id="summary-title">—</span>
+          </div>
+          <div class="wizard-summary-row">
+            <span class="wizard-summary-key">Campaign</span>
+            <span class="wizard-summary-val" id="summary-campaign">—</span>
+          </div>
+          <div class="wizard-summary-row">
+            <span class="wizard-summary-key">Probability</span>
+            <span class="wizard-summary-val" id="summary-prob">—</span>
+          </div>
+          <div class="wizard-summary-row">
+            <span class="wizard-summary-key">Effort</span>
+            <span class="wizard-summary-val" id="summary-effort">—</span>
+          </div>
+          <div class="wizard-summary-row">
+            <span class="wizard-summary-key">Value</span>
+            <span class="wizard-summary-val" id="summary-value">—</span>
+          </div>
+        </div>
+
+        <div class="wizard-footer">
+          <button type="button" class="wizard-skip" data-action="wizard#back">← Edit</button>
+          <%= f.submit "Save move", class: "btn btn-primary btn-lg" %>
+        </div>
+      </div>
+    </div>
+
+  <% end %>
+</div>
+
+<script>
+// Populate Step 4 summary when it becomes active
+document.addEventListener("DOMContentLoaded", function() {
+  const form = document.getElementById("wizard-form")
+  const wizardEl = document.querySelector("[data-controller='wizard']")
+
+  function updateSummary() {
+    const title = form.querySelector("[name='move[title]']")?.value || "—"
+    const campaignSelect = form.querySelector("[name='move[campaign_id]']")
+    const campaignText = campaignSelect?.options[campaignSelect.selectedIndex]?.text || "—"
+    const prob = form.querySelector("[data-prob-input]")?.value
+    const effort = form.querySelector("[data-effort-input]")?.value
+    const rawVal = form.querySelector("[data-raw-input]")?.value
+    const scaleVal = form.querySelector("[data-scale-input]")?.value
+    const scaleLabels = { "1":"Tiny","2":"Small","3":"Meaningful","5":"Strong","8":"Major","13":"Transformative" }
+
+    document.getElementById("summary-title").textContent = title || "—"
+    document.getElementById("summary-campaign").textContent = campaignText === "No campaign" ? "—" : campaignText
+    document.getElementById("summary-prob").textContent = prob ? prob + "%" : "—"
+    const effortMap = {"10":"10 min","30":"30 min","60":"1 hr","120":"2 hr","240":"4 hr","480":"1 day"}
+    document.getElementById("summary-effort").textContent = effort ? (effortMap[effort] || effort + " min") : "—"
+    if (rawVal) {
+      document.getElementById("summary-value").textContent = "$" + Number(rawVal).toLocaleString()
+    } else if (scaleVal) {
+      document.getElementById("summary-value").textContent = scaleLabels[scaleVal] || scaleVal
+    } else {
+      document.getElementById("summary-value").textContent = "—"
+    }
+  }
+
+  // Patch wizard controller to call updateSummary when reaching step 4
+  const observer = new MutationObserver(function() {
+    const steps = document.querySelectorAll(".wizard-step")
+    if (steps[3]?.classList.contains("wizard-step-active")) {
+      updateSummary()
+    }
+  })
+  observer.observe(wizardEl, { attributes: true, subtree: true, attributeFilter: ["class"] })
+
+  // Chips click
+  document.querySelectorAll(".wizard-chip").forEach(chip => {
+    chip.addEventListener("click", function() {
+      const input = form.querySelector("[name='move[title]']")
+      if (input) input.value = this.dataset.chipText
+    })
+  })
+})
+</script>

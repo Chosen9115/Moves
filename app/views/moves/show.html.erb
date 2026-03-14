@@ -1,0 +1,202 @@
+<% recommendation = @move.recommendation.presence || RecommendationEngine.call(@move) %>
+<% rec_label = rec_display(recommendation) %>
+<% rec_color = case recommendation
+  when "Push now", "Good bet" then "var(--accent)"
+  when "Needs signal"         then "var(--amber)"
+  when "Probably dead", "Reassess" then "var(--danger)"
+  else "var(--ink-2)"
+end %>
+<% rec_bg = case recommendation
+  when "Push now", "Good bet" then "var(--accent-mid)"
+  when "Needs signal"         then "var(--amber-soft)"
+  when "Probably dead", "Reassess" then "var(--danger-soft)"
+  else "var(--gray-soft)"
+end %>
+<% prob = @move.adjusted_probability || @move.subjective_probability %>
+<% effort_label = case @move.effort_minutes
+  when nil then nil
+  when 0..59 then "#{@move.effort_minutes} min"
+  else h = @move.effort_minutes / 60.0; "#{h == h.to_i ? h.to_i : h.round(1)} hr"
+end %>
+
+<div class="page-header">
+  <div style="display:flex; align-items:center; gap:8px;">
+    <%= link_to moves_path, style: "display:flex; align-items:center; gap:4px; color:var(--muted); font-size:13px;" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Moves
+    <% end %>
+  </div>
+  <div class="page-header-right">
+    <%= link_to "Edit", edit_move_path(@move), class: "btn btn-ghost btn-sm" %>
+    <div class="move-overflow" data-controller="disclosure" style="position:relative;">
+      <button class="btn btn-ghost btn-sm" data-action="disclosure#toggle" data-disclosure-target="trigger" style="padding:0 8px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+      </button>
+      <div data-disclosure-target="content" class="disclosure-hidden move-overflow-menu">
+        <% unless @move.completed? %>
+          <%= button_to "Complete", complete_move_path(@move), method: :patch, class: "move-overflow-item" %>
+        <% end %>
+        <% unless @move.paused? %>
+          <%= button_to "Pause", pause_move_path(@move), method: :patch, class: "move-overflow-item" %>
+        <% end %>
+        <% unless @move.archived? %>
+          <%= button_to "Archive", archive_move_path(@move), method: :patch, class: "move-overflow-item move-overflow-danger" %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="detail-layout">
+
+  <%# ── Left: context ──────────────────────────────────────── %>
+  <div class="detail-main">
+
+    <div>
+      <h1 class="detail-title"><%= @move.title %></h1>
+      <% if @move.campaign.present? %>
+        <div class="detail-campaign" style="margin-top:10px;">
+          <% if @move.campaign.project.present? %>
+            <span class="project-dot" style="background:<%= @move.campaign.project.color %>;"></span>
+          <% end %>
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          <%= link_to @move.campaign.name, campaign_path(@move.campaign), style: "color:var(--muted);" %>
+        </div>
+      <% end %>
+    </div>
+
+    <% if @move.success_definition.present? %>
+      <div class="detail-block">
+        <div class="detail-block-label">Success looks like</div>
+        <div class="detail-block-text"><%= @move.success_definition %></div>
+      </div>
+    <% end %>
+
+    <% if @move.notes.present? %>
+      <div class="detail-block">
+        <div class="detail-block-label">Notes</div>
+        <div class="detail-block-text"><%= simple_format(@move.notes) %></div>
+      </div>
+    <% end %>
+
+    <%# Signal history %>
+    <div>
+      <div class="detail-block-label" style="margin-bottom:10px;">What's happened</div>
+      <% if @move.move_signals.any? %>
+        <div class="signal-list">
+          <% @move.move_signals.order(created_at: :desc).each do |signal| %>
+            <div class="signal-row">
+              <div class="signal-dot <%= signal.direction %>"></div>
+              <div class="signal-content">
+                <div class="signal-text"><%= signal.signal_type %></div>
+                <div class="signal-meta">
+                  <%= time_ago_in_words(signal.created_at) %> ago
+                  · <%= signal.direction %>
+                  <% if signal.magnitude.present? %> · <%= signal.magnitude %><% end %>
+                  <% if signal.note.present? %> · <%= signal.note %><% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="empty-state" style="padding:20px; text-align:left;">
+          Nothing logged yet. Record your first update using the form.
+        </div>
+      <% end %>
+    </div>
+
+  </div>
+
+  <%# ── Right: intelligence panel ──────────────────────────── %>
+  <div class="detail-sidebar">
+
+    <%# Recommendation %>
+    <div class="rec-block" style="background:<%= rec_bg %>;">
+      <div class="rec-label" style="color:<%= rec_color %>; opacity:0.7;">Recommendation</div>
+      <div class="rec-value" style="color:<%= rec_color %>; font-size:28px;"><%= rec_label %></div>
+    </div>
+
+    <%# EV + Probability %>
+    <div class="score-grid">
+      <div class="score-card">
+        <div class="score-card-label">EV Score</div>
+        <div class="score-card-value">
+          <% if @move.ev_score.present? %>
+            <%= @move.ev_score >= 8 ? "High" : @move.ev_score >= 4 ? "Med" : "Low" %>
+          <% else %>—<% end %>
+        </div>
+      </div>
+      <div class="score-card">
+        <div class="score-card-label">Probability</div>
+        <div class="score-card-value"><%= prob ? "#{prob}%" : "—" %></div>
+      </div>
+    </div>
+
+    <div class="detail-divider" style="margin-bottom:12px;"></div>
+
+    <%# Log update — OPEN by default (primary action) %>
+    <div style="margin-bottom:16px;">
+      <div class="detail-block-label" style="margin-bottom:8px;">What just happened?</div>
+      <%= form_with model: [@move, @signal], url: move_signals_path(@move) do |f| %>
+        <div class="field" style="margin-bottom:8px;">
+          <%= f.text_field :signal_type, required: true, placeholder: "Positive reply, meeting booked...", style: "font-size:13px;" %>
+        </div>
+        <div class="grid grid-2" style="gap:8px; margin-bottom:8px;">
+          <div>
+            <%= f.select :direction, MoveSignal.directions.keys.map { |k| [k.humanize, k] }, {}, { style: "font-size:12px; height:34px;" } %>
+          </div>
+          <div>
+            <%= f.select :magnitude, MoveSignal.magnitudes.keys.map { |k| [k.humanize, k] }, {}, { style: "font-size:12px; height:34px;" } %>
+          </div>
+        </div>
+        <%= f.text_field :note, placeholder: "Any context worth noting", style: "font-size:13px; margin-bottom:8px;" %>
+        <%= f.submit "Log it", class: "btn btn-dark btn-full" %>
+      <% end %>
+    </div>
+
+    <%# Collapsed details %>
+    <div data-controller="disclosure">
+      <button class="detail-meta-toggle" data-action="disclosure#toggle" data-disclosure-target="trigger">
+        Details
+        <svg class="detail-meta-chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div data-disclosure-target="content" class="disclosure-hidden">
+        <% if effort_label.present? %>
+          <div class="meta-row">
+            <span class="meta-row-label">Effort</span>
+            <span class="meta-row-value"><%= effort_label %></span>
+          </div>
+        <% end %>
+        <% if @move.payoff_value_raw.present? %>
+          <div class="meta-row">
+            <span class="meta-row-label">Value</span>
+            <span class="meta-row-value">$<%= number_with_delimiter(@move.payoff_value_raw.to_i) %></span>
+          </div>
+        <% elsif @move.payoff_value_normalized.present? %>
+          <div class="meta-row">
+            <span class="meta-row-label">Payoff</span>
+            <span class="meta-row-value">
+              <%= {13=>"Transformative",8=>"Major",5=>"Strong",3=>"Meaningful",2=>"Small",1=>"Tiny"}[@move.payoff_value_normalized.to_i] || @move.payoff_value_normalized %>
+            </span>
+          </div>
+        <% end %>
+        <% if @move.due_date.present? %>
+          <div class="meta-row">
+            <span class="meta-row-label">Due</span>
+            <span class="meta-row-value"><%= @move.due_date.strftime("%b %-d, %Y") %></span>
+          </div>
+        <% end %>
+        <div class="meta-row">
+          <span class="meta-row-label">Stage</span>
+          <span class="meta-row-value"><%= @move.stage.humanize %></span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-row-label">Updated</span>
+          <span class="meta-row-value"><%= time_ago_in_words(@move.updated_at) %> ago</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

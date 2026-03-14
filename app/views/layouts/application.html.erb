@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Moves" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Moves">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= yield :head %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="/icon.png">
+    <%= stylesheet_link_tag :application, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body data-controller="tour" data-tour-auto-start-value="<%= params[:tour] == '1' %>">
+    <div class="app-shell" data-controller="command-palette">
+
+      <%# ── Command palette modal ──────────────────────────── %>
+      <div class="palette-overlay palette-hidden"
+           data-command-palette-target="overlay"
+           data-action="click->command-palette#overlayClick">
+        <div class="palette-dialog">
+          <div class="palette-search-row">
+            <svg class="palette-search-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="palette-input"
+                   placeholder="Search moves, campaigns — or type a new one…"
+                   autocomplete="off"
+                   data-command-palette-target="input"
+                   data-action="input->command-palette#search keydown->command-palette#keydown" />
+            <kbd class="palette-esc">esc</kbd>
+          </div>
+          <div class="palette-results" data-command-palette-target="results"></div>
+        </div>
+      </div>
+
+      <%# Quick-capture form used by palette ──────────────── %>
+      <%= form_with url: moves_path, id: "palette-quick-form", html: { style: "display:none" } do |f| %>
+        <%= f.hidden_field :stage, value: "inbox" %>
+        <%= hidden_field_tag :redirect_to, focus_path %>
+        <%= f.text_field :title %>
+      <% end %>
+
+      <%# ── Sidebar ─────────────────────────────────────────── %>
+      <aside class="sidebar">
+        <div class="sidebar-brand">Moves</div>
+        <nav class="sidebar-nav">
+          <%= link_to inbox_path, class: "#{current_page?(inbox_path) ? 'active' : ''}" do %>
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+            Inbox
+          <% end %>
+          <%= link_to moves_path, class: "#{controller_name == 'moves' ? 'active' : ''}" do %>
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Moves
+          <% end %>
+          <%= link_to campaigns_path, class: "#{controller_name == 'campaigns' ? 'active' : ''}" do %>
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            Campaigns
+          <% end %>
+          <%= link_to focus_path, class: "#{current_page?(focus_path) || current_page?(root_path) ? 'active' : ''}" do %>
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            Focus
+          <% end %>
+          <%= link_to archive_path, class: "#{current_page?(archive_path) ? 'active' : ''}" do %>
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+            Archive
+          <% end %>
+        </nav>
+        <div class="sidebar-projects" data-controller="project-modal">
+          <div class="sidebar-section-label" style="display:flex; align-items:center; justify-content:space-between;">
+            Projects
+            <button type="button" class="sidebar-add-btn" data-action="project-modal#open" title="New project">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
+
+          <%# ── New project inline form ── %>
+          <div class="project-modal" data-project-modal-target="modal" style="display:none;">
+            <%= form_with model: Project.new, url: projects_path, data: { turbo: false } do |f| %>
+              <div class="project-modal-field">
+                <%= f.text_field :name, placeholder: "Project name", autocomplete: "off", autofocus: true, required: true, class: "project-modal-input" %>
+              </div>
+              <div class="project-modal-field">
+                <label class="project-modal-label">Color</label>
+                <div class="project-color-picker">
+                  <% Project::COLORS.each_with_index do |color, i| %>
+                    <label class="project-color-dot-label">
+                      <input type="radio" name="project[color]" value="<%= color %>" <%= 'checked' if i == 0 %> style="display:none;" data-action="change->project-modal#selectColor">
+                      <span class="project-color-dot" style="background:<%= color %>;" data-project-modal-target="colorDot"></span>
+                    </label>
+                  <% end %>
+                </div>
+              </div>
+              <div class="project-modal-field">
+                <label class="project-modal-label">Check-in cadence</label>
+                <div class="project-cadence-group">
+                  <% [["Daily", "daily"], ["Weekly", "weekly"], ["Monthly", "monthly"]].each_with_index do |(label, val), i| %>
+                    <label class="project-cadence-btn">
+                      <input type="radio" name="project[cadence]" value="<%= val %>" <%= 'checked' if i == 1 %> style="display:none;">
+                      <span><%= label %></span>
+                    </label>
+                  <% end %>
+                </div>
+              </div>
+              <div class="project-modal-actions">
+                <%= f.submit "Create project", class: "btn btn-primary btn-sm" %>
+                <button type="button" class="btn btn-ghost btn-sm" data-action="project-modal#close">Cancel</button>
+              </div>
+            <% end %>
+          </div>
+
+          <% if all_projects&.any? %>
+            <%= link_to url_for(request.params.merge(project_id: "")),
+                class: "sidebar-project-row #{current_project.nil? ? 'active' : ''}" do %>
+              <span class="project-dot-all"></span>
+              All projects
+            <% end %>
+            <% all_projects.each do |project| %>
+              <div data-controller="project-context"
+                   data-project-context-project-id-value="<%= project.id %>"
+                   data-project-context-project-name-value="<%= project.name %>"
+                   data-project-context-project-color-value="<%= project.color %>"
+                   style="position:relative;">
+                <%= link_to url_for(request.params.merge(project_id: project.id)),
+                    class: "sidebar-project-row #{current_project == project ? 'active' : ''}",
+                    data: { action: "contextmenu->project-context#open" } do %>
+                  <span class="project-dot" style="background:<%= project.color %>;"></span>
+                  <%= project.name %>
+                  <% if project.overdue? %>
+                    <span class="project-overdue-dot"></span>
+                  <% end %>
+                <% end %>
+                <div class="project-ctx-menu" data-project-context-target="menu" style="display:none;">
+                  <div class="project-ctx-section">
+                    <label class="project-ctx-label">Name</label>
+                    <div style="display:flex; gap:4px;">
+                      <input type="text" data-rename-input value="<%= project.name %>" class="project-ctx-input"
+                             onkeydown="if(event.key==='Enter'){event.preventDefault();this.closest('[data-controller=project-context]').querySelector('[data-action*=rename]').click();}">
+                      <button class="btn btn-primary btn-sm" data-action="project-context#rename" style="flex-shrink:0;">Save</button>
+                    </div>
+                  </div>
+                  <div class="project-ctx-section">
+                    <label class="project-ctx-label">Color</label>
+                    <div style="display:flex; gap:6px;">
+                      <% Project::COLORS.each do |color| %>
+                        <span class="project-color-dot <%= 'selected' if project.color == color %>"
+                              style="background:<%= color %>; cursor:pointer;"
+                              data-color="<%= color %>"
+                              data-action="click->project-context#changeColor"></span>
+                      <% end %>
+                    </div>
+                  </div>
+                  <div class="project-ctx-divider"></div>
+                  <button class="project-ctx-delete" data-action="project-context#confirmDelete">
+                    Delete project
+                  </button>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+        <div class="sidebar-footer">
+          <button class="sidebar-cmd-btn" data-action="command-palette#open">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Search
+            <kbd>⌘K</kbd>
+          </button>
+          <%= link_to settings_path do %>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+          <% end %>
+        </div>
+      </aside>
+
+      <%# ── Main ───────────────────────────────────────────── %>
+      <div class="main">
+        <% if notice.present? %>
+          <div style="padding: 0 32px; padding-top: 12px;">
+            <div class="flash flash-notice"><%= notice %></div>
+          </div>
+        <% end %>
+        <% if alert.present? %>
+          <div style="padding: 0 32px; padding-top: 12px;">
+            <div class="flash flash-alert"><%= alert %></div>
+          </div>
+        <% end %>
+        <%= yield %>
+      </div>
+
+    </div>
+  </body>
+</html>

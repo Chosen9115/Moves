@@ -1,0 +1,9 @@
+<% if moves.any? %>
+  <div class="move-list">
+    <% moves.each_with_index do |move, i| %>
+      <%= render "moves/move_row", move: move, top_ranked: i == 0 %>
+    <% end %>
+  </div>
+<% else %>
+  <div class="empty-state">No moves in this section.</div>
+<% end %>

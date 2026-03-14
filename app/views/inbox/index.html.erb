@@ -1,0 +1,81 @@
+<div class="page-header">
+  <span class="page-header-title">Inbox</span>
+  <div class="page-header-right">
+    <% if @inbox_moves.any? %>
+      <span class="badge badge-outline"><%= pluralize(@inbox_moves.size, "item") %></span>
+    <% end %>
+  </div>
+</div>
+
+<div class="page-content">
+
+  <%# Smart capture bar — short text = quick capture, long text = AI parse %>
+  <div data-controller="smart-capture" data-smart-capture-parse-url-value="<%= parse_moves_path %>">
+    <%= form_with model: @move, url: moves_path, data: { turbo: false, action: "submit->smart-capture#submit", "smart-capture-target": "form" } do |f| %>
+      <%= f.hidden_field :stage, value: :inbox %>
+      <%= hidden_field_tag :redirect_to, inbox_path %>
+      <div class="capture-bar" style="margin-bottom: 4px;" onclick="this.querySelector('textarea').focus()">
+        <svg class="capture-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <textarea name="move[title]" placeholder="What's the move? Quick note or paste a longer description..." autofocus autocomplete="off" rows="1"
+                  data-smart-capture-target="input"
+                  data-action="input->smart-capture#onInput keydown->smart-capture#onKeydown"
+                  style="border:none; background:transparent; font-size:14px; font-family:inherit; color:var(--ink); flex:1; outline:none; width:100%; resize:none; overflow:hidden; line-height:1.5; padding:2px 0; min-height:20px; height:20px;"></textarea>
+      </div>
+      <div class="capture-hint-row" data-smart-capture-target="hintRow">
+        <div class="capture-hint" data-smart-capture-target="hint">Enter to capture</div>
+        <span class="capture-hint-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div class="capture-hint-tooltip">
+            <strong>Voice / paste guide</strong>
+            <ul>
+              <li>What you need to do (the move)</li>
+              <li>Who it involves or which campaign</li>
+              <li>Dollar value or payoff estimate</li>
+              <li>Your probability guess (e.g. 60%)</li>
+              <li>Time effort (e.g. 30 min, 2 hours)</li>
+              <li>Any deadline or due date</li>
+              <li>Context or notes</li>
+            </ul>
+          </div>
+        </span>
+        <div class="capture-spinner" data-smart-capture-target="spinner"></div>
+      </div>
+      <%= f.hidden_field :campaign_id %>
+    <% end %>
+  </div>
+
+  <%# Inbox list %>
+  <% if @inbox_moves.any? %>
+    <div class="section-label" style="margin-top:20px; margin-bottom: 10px;">
+      Recent
+      <span class="section-label-count"><%= @inbox_moves.size %></span>
+    </div>
+    <div class="move-list">
+      <% @inbox_moves.order(created_at: :desc).each do |move| %>
+        <div class="move-row" style="cursor:default;">
+          <div class="move-row-left">
+            <div class="move-row-title"><%= link_to move.title, move_path(move), style: "color:var(--ink);" %></div>
+            <div class="move-row-meta">
+              <span class="meta-text"><%= time_ago_in_words(move.created_at) %> ago</span>
+              <% if move.campaign.present? %>
+                <span class="meta-text">·</span>
+                <span class="badge badge-outline"><%= move.campaign.name %></span>
+              <% end %>
+              <span class="meta-text">·</span>
+              <%= button_to "archive", archive_move_path(move), method: :patch, class: "inbox-archive-link", form: { style: "display:inline;" } %>
+            </div>
+          </div>
+          <div class="move-row-right">
+            <%= link_to "Develop →", edit_move_path(move), class: "btn btn-sm btn-primary" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="empty-state">
+      <p style="margin:0 0 4px; font-weight:500; color:var(--ink);">Inbox is clear.</p>
+      <p style="margin:0; color:var(--muted);">Capture a move above to get started.</p>
+    </div>
+  <% end %>
+
+</div>

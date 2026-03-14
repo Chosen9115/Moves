@@ -1,0 +1,87 @@
+<div class="page-header">
+  <span class="page-header-title">Settings</span>
+</div>
+
+<div class="page-content" style="max-width: 600px;">
+
+  <%# ── Intelligence ── %>
+  <div class="settings-card">
+    <div class="settings-card-header">
+      <h2 class="settings-card-title">Intelligence</h2>
+      <p class="settings-card-desc">Connect your AI provider to enable smart features.</p>
+    </div>
+    <%= form_with model: @preference, url: settings_path, method: :patch, data: { turbo: false } do |f| %>
+      <div class="field">
+        <%= f.label :openai_api_key, "OpenAI API key" %>
+        <%= f.text_field :openai_api_key,
+            value: @preference.openai_api_key.present? ? "sk-••••••••" + @preference.openai_api_key.last(4) : "",
+            placeholder: "sk-...",
+            autocomplete: "off",
+            style: "font-family: monospace;" %>
+        <p class="field-help">
+          Paste your key from
+          <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" style="color:var(--accent);">platform.openai.com/api-keys</a>.
+          AI features activate automatically when a key is present.
+        </p>
+      </div>
+      <div class="field">
+        <%= f.label :openai_model, "Model" %>
+        <select name="app_preference[openai_model]" id="app_preference_openai_model">
+          <% ["gpt-4.1-mini", "gpt-4.1", "gpt-4o", "gpt-4o-mini"].each do |model| %>
+            <option value="<%= model %>" <%= 'selected' if @preference.openai_model == model %>><%= model %></option>
+          <% end %>
+        </select>
+      </div>
+      <% if @preference.openai_api_key.present? %>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+          <span class="badge badge-green">AI active</span>
+          <span class="text-sm text-muted">Using <%= @preference.openai_model %></span>
+        </div>
+      <% end %>
+      <div class="form-actions">
+        <%= f.submit "Save", class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+
+  <%# ── Data ── %>
+  <div class="settings-card">
+    <div class="settings-card-header">
+      <h2 class="settings-card-title">Data</h2>
+      <p class="settings-card-desc">Export or import your campaigns, moves, and signals.</p>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:14px;">
+      <%= link_to "Export JSON", export_backups_path, class: "btn btn-secondary" %>
+    </div>
+    <%= form_with url: import_backups_path, method: :post, multipart: true, data: { turbo: false } do %>
+      <div class="field">
+        <label class="field-label">Import backup</label>
+        <%= file_field_tag :backup_file, accept: ".json,application/json" %>
+      </div>
+      <div class="form-actions">
+        <%= submit_tag "Import", class: "btn btn-ghost" %>
+      </div>
+    <% end %>
+  </div>
+
+  <%# ── Product Tour ── %>
+  <div class="settings-card">
+    <div class="settings-card-header">
+      <h2 class="settings-card-title">Product tour</h2>
+      <p class="settings-card-desc">Walk through the core workflow — capture, develop, focus.</p>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="btn btn-secondary" data-action="tour#restart">Run tour</button>
+      <span class="text-sm text-muted" id="tour-status-text"></span>
+    </div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        const el = document.getElementById("tour-status-text");
+        if (el && localStorage.getItem("moves_tour_completed")) {
+          el.textContent = "Completed";
+        }
+      });
+    </script>
+  </div>
+
+</div>

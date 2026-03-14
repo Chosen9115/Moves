@@ -1,0 +1,44 @@
+atl_pitch:
+  uuid: 2a7fcb9d-2222-4e4c-a222-66f7b2f20001
+  title: Pitch Quick Pay to ATL
+  description: Reach out and secure pilot meeting
+  campaign: quick_pay
+  move_type: strategic
+  stage: active
+  success_definition: Pilot meeting booked
+  payoff_type: leverage
+  payoff_value_raw: 13.0
+  payoff_value_normalized: 13
+  base_rate: 25
+  subjective_probability: 40
+  adjusted_probability: 40
+  effort_minutes: 30
+  advantages: [warm intro]
+  blockers: [internal bandwidth]
+  ev_score: 17.3333
+  confidence_score: 0.5
+  recommendation: Push now
+  due_date: <%= 3.days.from_now %>
+  notes: Initial move
+
+cabalo_followup:
+  uuid: 2a7fcb9d-2222-4e4c-a222-66f7b2f20002
+  title: Follow up with Cabalo
+  description: Ask for next steps
+  campaign: quick_pay
+  move_type: tactical
+  stage: inbox
+  success_definition: Reply with timeline
+  payoff_type: relationship
+  payoff_value_raw: 5.0
+  payoff_value_normalized: 5
+  base_rate: 25
+  subjective_probability: 25
+  adjusted_probability: 25
+  effort_minutes: 60
+  advantages: [existing trust]
+  blockers: [no response]
+  ev_score: 2.0833
+  confidence_score: 0.4
+  recommendation: Good bet
+  notes: Waiting for response

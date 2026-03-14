@@ -1,0 +1,19 @@
+quick_pay:
+  uuid: 1e8fcb9d-1111-4e4c-a111-66f7b2f10001
+  name: Quick Pay Pilots
+  objective: Book and launch top pilot opportunities
+  status: active
+  total_ev: 0.0
+  momentum_score: 0.0
+  confidence_trend: 0.0
+  active_move_count: 1
+
+fundraising:
+  uuid: 1e8fcb9d-1111-4e4c-a111-66f7b2f10002
+  name: Fundraising
+  objective: Secure next check
+  status: active
+  total_ev: 0.0
+  momentum_score: 0.0
+  confidence_trend: 0.0
+  active_move_count: 1

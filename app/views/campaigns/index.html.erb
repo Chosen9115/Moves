@@ -1,0 +1,94 @@
+<div class="page-header">
+  <span class="page-header-title">Campaigns</span>
+  <div class="page-header-right">
+    <%= link_to new_campaign_path, class: "btn btn-primary" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New campaign
+    <% end %>
+  </div>
+</div>
+
+<div class="page-content">
+
+  <% if @campaigns.any? %>
+    <div class="campaign-list">
+      <% @campaigns.each do |campaign| %>
+        <% momentum = campaign.momentum_score || 0 %>
+        <% momentum_badge, momentum_class = if momentum > 0.3
+            ["Rising", "badge-green"]
+          elsif momentum < -0.3
+            ["Stalled", "badge-amber"]
+          else
+            ["Steady", "badge-blue"]
+          end %>
+        <% ev_label = if campaign.total_ev.present?
+            campaign.total_ev >= 8 ? "High" : campaign.total_ev >= 4 ? "Med" : "Low"
+          else
+            nil
+          end %>
+        <% top_move = campaign.moves.active.order(ev_score: :desc).first %>
+        <% pipeline_total = campaign.moves.active.sum { |m| m.payoff_value_raw.to_f } %>
+        <% needs_signal = campaign.moves.active.any? { |m| (m.recommendation || "").include?("signal") || (m.recommendation || "").include?("dead") } %>
+
+        <div class="campaign-card">
+          <div class="campaign-card-header">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <% if campaign.project.present? %>
+                <span class="project-dot" style="background:<%= campaign.project.color %>;"></span>
+              <% end %>
+              <%= link_to campaign.name, campaign_path(campaign), class: "campaign-card-name" %>
+            </div>
+            <span class="badge <%= momentum_class %>">
+              <% if momentum_badge == "Rising" %>
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              <% end %>
+              <%= momentum_badge %>
+            </span>
+          </div>
+          <% if campaign.objective.present? %>
+            <div class="campaign-card-objective"><%= campaign.objective %></div>
+          <% else %>
+            <div class="campaign-card-objective text-faint">No objective set.</div>
+          <% end %>
+          <div class="campaign-stats">
+            <div>
+              <div class="campaign-stat-val"><%= campaign.active_move_count %></div>
+              <div class="campaign-stat-label">active <%= "move".pluralize(campaign.active_move_count) %></div>
+            </div>
+            <% if pipeline_total > 0 %>
+              <div>
+                <div class="campaign-stat-val accent">$<%= number_with_delimiter(pipeline_total.to_i) %></div>
+                <div class="campaign-stat-label">pipeline value</div>
+              </div>
+            <% end %>
+            <% if ev_label %>
+              <div>
+                <div class="campaign-stat-val <%= ev_label == 'High' ? 'accent' : ev_label == 'Low' ? 'muted' : '' %>"><%= ev_label %></div>
+                <div class="campaign-stat-label">aggregate EV</div>
+              </div>
+            <% end %>
+          </div>
+          <% if top_move %>
+            <div class="campaign-next">
+              <% if needs_signal %>
+                <span class="campaign-next-warn">Gone quiet →</span>
+              <% else %>
+                <span class="campaign-next-label">Best bet →</span>
+              <% end %>
+              <span><%= link_to top_move.title, move_path(top_move), style: "color:var(--ink);" %></span>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="empty-state">
+      <p style="margin:0 0 4px; font-weight:500; color:var(--ink);">No campaigns yet.</p>
+      <p style="margin:0; color:var(--muted);">
+        <%= link_to "Create your first campaign", new_campaign_path, style: "color:var(--accent);" %>
+        to group related moves into strategic fronts.
+      </p>
+    </div>
+  <% end %>
+
+</div>

@@ -1,0 +1,46 @@
+<% recommendation = move.recommendation.presence || RecommendationEngine.call(move) %>
+<% badge_class = case recommendation
+  when "Push now", "Good bet" then "good"
+  when "Needs signal", "Optional" then "warn"
+  else "danger"
+end %>
+
+<article class="card">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title"><%= link_to move.title, move_path(move) %></h3>
+      <p class="subtle"><%= move.campaign&.name || "No campaign" %></p>
+    </div>
+    <span class="badge <%= badge_class %>"><%= recommendation %></span>
+  </div>
+
+  <div class="badges">
+    <span class="badge">EV <%= move.ev_score ? format("%.2f", move.ev_score) : "-" %></span>
+    <span class="badge">P <%= move.adjusted_probability || move.subjective_probability || "-" %>%</span>
+    <span class="badge">Effort <%= move.effort_minutes || "-" %>m</span>
+    <span class="badge">Stage <%= move.stage.humanize %></span>
+  </div>
+
+  <div class="meta">
+    <span>Updated <%= time_ago_in_words(move.updated_at) %> ago</span>
+    <% if move.due_date.present? %>
+      <span>Due <%= l(move.due_date, format: :short) %></span>
+    <% end %>
+  </div>
+
+  <div class="actions">
+    <%= link_to "Clarify", edit_move_path(move), class: "button" %>
+    <% unless move.active? %>
+      <%= button_to "Activate", activate_move_path(move), method: :patch, class: "button" %>
+    <% end %>
+    <% unless move.paused? %>
+      <%= button_to "Pause", pause_move_path(move), method: :patch, class: "button" %>
+    <% end %>
+    <% unless move.archived? %>
+      <%= button_to "Archive", archive_move_path(move), method: :patch, class: "button" %>
+    <% end %>
+    <% unless move.completed? %>
+      <%= button_to "Complete", complete_move_path(move), method: :patch, class: "button primary" %>
+    <% end %>
+  </div>
+</article>

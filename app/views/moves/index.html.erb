@@ -1,0 +1,39 @@
+<div class="page-header">
+  <span class="page-header-title">Moves</span>
+  <div class="page-header-right">
+    <%= link_to new_move_path, class: "btn btn-primary" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New move
+    <% end %>
+  </div>
+</div>
+
+<div class="page-content">
+
+  <%# Filter chips %>
+  <div class="filter-chips">
+    <%= link_to "All", moves_path, class: "chip #{params[:campaign_id].blank? && params[:stage].blank? ? 'active' : ''}" %>
+    <%= link_to "Active", moves_path(stage: "active"), class: "chip #{params[:stage] == 'active' ? 'active' : ''}" %>
+    <%= link_to "Paused", moves_path(stage: "paused"), class: "chip #{params[:stage] == 'paused' ? 'active' : ''}" %>
+    <% @campaigns.each do |campaign| %>
+      <%= link_to campaign.name, moves_path(campaign_id: campaign.id), class: "chip #{params[:campaign_id] == campaign.id.to_s ? 'active' : ''}" %>
+    <% end %>
+  </div>
+
+  <%# Move list %>
+  <% if @moves.any? %>
+    <div class="move-list">
+      <% @moves.each_with_index do |move, i| %>
+        <%= render "move_row", move: move, top_ranked: false %>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="empty-state">
+      <p style="margin:0 0 4px; font-weight:500; color:var(--ink);">No moves here.</p>
+      <p style="margin:0; color:var(--muted);">
+        <%= link_to "Create your first move", new_move_path, style: "color:var(--accent);" %>
+      </p>
+    </div>
+  <% end %>
+
+</div>

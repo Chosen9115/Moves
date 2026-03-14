@@ -1,0 +1,87 @@
+<%= form_with model: move do |f| %>
+  <% if move.errors.any? %>
+    <div class="flash flash-alert">
+      <strong>Fix these fields:</strong>
+      <ul>
+        <% move.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :title, "Move" %>
+    <%= f.text_field :title, required: true, placeholder: "Reach out to Cabalo about pilot" %>
+  </div>
+
+  <div class="field">
+    <%= f.label :campaign_id, "Campaign" %>
+    <select name="move[campaign_id]" id="move_campaign_id" onchange="if(this.value==='__new__'){this.style.display='none';document.getElementById('new-campaign-row').style.display='flex';}">
+      <option value="">No campaign</option>
+      <% Campaign.order(:name).each do |c| %>
+        <option value="<%= c.id %>" <%= 'selected' if move.campaign_id == c.id %>><%= c.name %></option>
+      <% end %>
+      <option value="__new__">＋ New campaign...</option>
+    </select>
+    <div id="new-campaign-row" style="display:none; margin-top:6px; gap:8px; align-items:center;">
+      <%= f.text_field :campaign_name, placeholder: "New campaign name", style: "flex:1;" %>
+      <button type="button" style="white-space:nowrap; font-size:12px; color:var(--muted); cursor:pointer; background:none; border:none; text-decoration:underline;" onclick="document.getElementById('new-campaign-row').style.display='none';document.getElementById('move_campaign_id').style.display='';document.getElementById('move_campaign_id').value='';document.getElementById('move_campaign_name').value='';">Cancel</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <%= f.label :success_definition, "What success looks like" %>
+    <%= f.text_area :success_definition, placeholder: "Meeting booked, proposal sent, contract signed...", rows: 2 %>
+  </div>
+
+  <div class="grid two">
+    <div class="field">
+      <%= f.label :payoff_value_raw, "Dollar value" %>
+      <div style="position:relative;">
+        <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:14px; pointer-events:none;">$</span>
+        <%= f.number_field :payoff_value_raw, placeholder: "50000", min: 0, step: 1, style: "padding-left:26px;", value: move.payoff_value_raw.present? ? move.payoff_value_raw.to_i : nil %>
+      </div>
+    </div>
+
+    <div class="field">
+      <%= f.label :payoff_value_normalized, "Or relative scale" %>
+      <%= f.select :payoff_value_normalized,
+          [["\u2014", ""], ["Tiny (1)", 1], ["Small (2)", 2], ["Meaningful (3)", 3], ["Strong (5)", 5], ["Major (8)", 8], ["Transformative (13)", 13]],
+          {}, {} %>
+      <p class="field-help">Use when dollar value is unknown.</p>
+    </div>
+  </div>
+
+  <div class="grid two">
+    <div class="field">
+      <%= f.label :subjective_probability, "Probability" %>
+      <%= f.select :subjective_probability, probability_options.map { |n| ["#{n}%", n] }, include_blank: "Pick probability" %>
+    </div>
+
+    <div class="field">
+      <%= f.label :effort_minutes, "Effort" %>
+      <%= f.select :effort_minutes, effort_options.map { |n| [n >= 60 ? "#{n / 60}h" : "#{n}m", n] }, include_blank: "Pick effort" %>
+    </div>
+  </div>
+
+  <div class="grid two">
+    <div class="field">
+      <%= f.label :due_date %>
+      <%= f.date_field :due_date %>
+    </div>
+    <div></div>
+  </div>
+
+  <div class="field">
+    <%= f.label :notes %>
+    <%= f.text_area :notes, placeholder: "Additional context, links, notes...", rows: 3 %>
+  </div>
+
+  <div class="actions">
+    <%= f.submit class: "primary" %>
+    <% if move.persisted? %>
+      <%= link_to "Suggest with AI", suggest_ai_move_path(move), data: { turbo_method: :post }, class: "button secondary" %>
+    <% end %>
+  </div>
+<% end %>

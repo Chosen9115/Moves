@@ -1,0 +1,16 @@
+<div class="page-header">
+  <div style="display:flex; align-items:center; gap:8px;">
+    <%= link_to move_path(@move), style: "display:flex; align-items:center; gap:4px; color:var(--muted); font-size:13px;" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Back
+    <% end %>
+  </div>
+  <span class="page-header-title">Edit move</span>
+  <div class="page-header-right">
+    <%= link_to "Cancel", move_path(@move), class: "btn btn-ghost btn-sm" %>
+  </div>
+</div>
+
+<div class="page-content" style="max-width:720px;">
+  <%= render "form", move: @move %>
+</div>

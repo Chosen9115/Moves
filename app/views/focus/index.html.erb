@@ -1,0 +1,128 @@
+<div class="page-header">
+  <span class="page-header-title">Focus</span>
+  <span class="text-sm text-muted"><%= Date.today.strftime("%A, %B %-d") %></span>
+</div>
+
+<div class="page-content">
+
+  <%# ── Monday brief ───────────────────────────────────────── %>
+  <% if @show_brief && @brief %>
+    <% b = @brief %>
+    <div class="brief-card">
+      <div class="brief-body">
+        <div class="brief-week">Week of <%= Date.today.beginning_of_week.strftime("%B %-d") %></div>
+        <% if b[:completed_last_week] > 0 %>
+          <p class="brief-line"><strong><%= b[:completed_last_week] %> move<%= b[:completed_last_week] == 1 ? "" : "s" %> completed</strong> last week across <%= b[:active_move_count] %> still in play<% if b[:total_pipeline] > 0 %>. Total pipeline: <strong>$<%= number_with_delimiter(b[:total_pipeline].to_i) %></strong><% end %>.</p>
+        <% else %>
+          <p class="brief-line">Nothing completed last week — <%= b[:active_move_count] %> move<%= b[:active_move_count] == 1 ? "" : "s" %> still in play<% if b[:total_pipeline] > 0 %>. Pipeline: <strong>$<%= number_with_delimiter(b[:total_pipeline].to_i) %></strong><% end %>.</p>
+        <% end %>
+        <% if b[:top_move] %>
+          <p class="brief-line">Best move right now: <strong><%= b[:top_move].title %></strong>.</p>
+        <% end %>
+        <% if b[:overdue_projects]&.any? %>
+          <% b[:overdue_projects].each do |proj| %>
+            <p class="brief-line brief-warn">
+              <span class="project-dot" style="background:<%= proj.color %>;"></span>
+              <strong><%= proj.name %></strong> hasn't heard from you in <strong><%= proj.days_since_last_signal %> days</strong> — your <%= proj.cadence %> cadence is overdue.
+            </p>
+          <% end %>
+        <% elsif b[:most_neglected_move] && b[:neglect_days] >= 5 %>
+          <p class="brief-line brief-warn"><%= b[:most_neglected_move].title %> hasn't heard from you in <strong><%= b[:neglect_days] %> days</strong>. It may be going cold.</p>
+        <% end %>
+      </div>
+      <div class="brief-actions">
+        <%= button_to "Dismiss", dismiss_brief_path, method: :post, class: "brief-dismiss" %>
+      </div>
+    </div>
+  <% end %>
+
+  <%# ── Hero move ───────────────────────────────────────────── %>
+  <% hero = @best_moves_now.first %>
+  <% if hero %>
+    <% hero_rec = hero.recommendation.presence || RecommendationEngine.call(hero) %>
+    <% hero_badge = rec_badge_class(hero_rec) %>
+    <% hero_label = rec_display(hero_rec) %>
+    <% hero_prob = hero.adjusted_probability || hero.subjective_probability %>
+    <% hero_effort = case hero.effort_minutes
+         when nil then nil
+         when 0..15 then "#{hero.effort_minutes}m"
+         when 16..90 then "#{hero.effort_minutes}m"
+         else h = (hero.effort_minutes / 60.0).round(1); "#{h == h.to_i ? h.to_i : h}h"
+       end %>
+    <div class="hero-move-wrap">
+      <%= link_to move_path(hero), class: "hero-move" do %>
+        <div class="hero-move-top">
+          <div class="hero-move-meta">
+            <% if hero.campaign.present? %>
+              <% if hero.campaign.project.present? %>
+                <span class="project-dot" style="background:<%= hero.campaign.project.color %>;"></span>
+              <% end %>
+              <span class="hero-move-project"><%= hero.campaign.name %></span>
+              <span class="hero-move-dot">·</span>
+            <% end %>
+            <% if hero_prob.present? %><span class="hero-move-prob"><%= hero_prob %>% probability</span><% end %>
+            <% if hero_effort.present? %><span class="hero-move-dot">·</span><span class="hero-move-prob"><%= hero_effort %></span><% end %>
+            <% if hero.payoff_value_raw.present? %><span class="hero-move-dot">·</span><span class="hero-move-prob">$<%= number_with_delimiter(hero.payoff_value_raw.to_i) %></span><% end %>
+          </div>
+          <span class="badge <%= hero_badge %>"><%= hero_label %></span>
+        </div>
+        <div class="hero-move-title"><%= hero.title %></div>
+        <% if hero.success_definition.present? %>
+          <div class="hero-move-success"><%= hero.success_definition %></div>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%# ── What to work on ────────────────────────────────────── %>
+  <% rest = @best_moves_now.drop(1) %>
+  <% if rest.any? %>
+    <div class="section-gap">
+      <div class="section-label">
+        What to work on
+        <span class="section-label-count"><%= rest.size %></span>
+      </div>
+      <div class="move-list">
+        <% rest.each do |move| %>
+          <%= render "moves/move_row", move: move, top_ranked: false %>
+        <% end %>
+      </div>
+    </div>
+  <% elsif !hero %>
+    <div class="empty-state">
+      Nothing pulling for attention right now.
+      <%= link_to "Add a move", new_move_path, style: "color:var(--accent);" %> to get started.
+    </div>
+  <% end %>
+
+  <%# ── Long game ───────────────────────────────────────────── %>
+  <% if @strategic_bets.any? %>
+    <div class="section-gap">
+      <div class="section-label">
+        Long game
+        <span class="section-label-count"><%= @strategic_bets.size %></span>
+      </div>
+      <div class="move-list">
+        <% @strategic_bets.each do |move| %>
+          <%= render "moves/move_row", move: move, top_ranked: false %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <%# ── Gone quiet ──────────────────────────────────────────── %>
+  <% if @needs_a_call.any? %>
+    <div class="section-gap">
+      <div class="section-label">
+        Gone quiet
+        <span class="section-label-count"><%= @needs_a_call.size %></span>
+      </div>
+      <div class="move-list">
+        <% @needs_a_call.each do |move| %>
+          <%= render "moves/move_row", move: move, top_ranked: false %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+</div>

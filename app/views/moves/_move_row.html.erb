@@ -1,0 +1,46 @@
+<% recommendation = move.recommendation.presence || RecommendationEngine.call(move) %>
+<% badge_class = rec_badge_class(recommendation) %>
+<% label      = rec_display(recommendation) %>
+<% prob = move.adjusted_probability || move.subjective_probability %>
+<% effort_label = case move.effort_minutes
+  when nil then nil
+  when 0..15 then "#{move.effort_minutes}m"
+  when 16..90 then "#{move.effort_minutes}m"
+  else h = (move.effort_minutes / 60.0).round(1); "#{h == h.to_i ? h.to_i : h}h"
+end %>
+<% ev_class = move.ev_score.present? ? (move.ev_score >= 5 ? "high" : "med") : "" %>
+
+<a href="<%= move_path(move) %>" class="move-row <%= 'top-ranked' if top_ranked %>">
+  <div class="move-row-left">
+    <div class="move-row-title">
+      <% if move.campaign&.project.present? %>
+        <span class="project-dot" style="background:<%= move.campaign.project.color %>;"></span>
+      <% end %>
+      <%= move.title %>
+    </div>
+    <div class="move-row-meta">
+      <span class="badge <%= badge_class %>"><%= label %></span>
+      <% if move.campaign.present? %>
+        <span class="meta-text-medium"><%= move.campaign.name %></span>
+        <span class="meta-text">·</span>
+      <% end %>
+      <% if prob.present? %>
+        <span class="meta-text"><%= prob %>%</span>
+      <% end %>
+      <% if effort_label.present? %>
+        <span class="meta-text">· <%= effort_label %></span>
+      <% end %>
+      <% if move.updated_at < 5.days.ago %>
+        <span class="meta-text" style="color:var(--amber);">· quiet <%= time_ago_in_words(move.updated_at) %></span>
+      <% end %>
+    </div>
+  </div>
+  <div class="move-row-right">
+    <% if move.payoff_value_raw.present? %>
+      <span class="meta-text" style="font-variant-numeric:tabular-nums;">$<%= number_with_delimiter(move.payoff_value_raw.to_i) %></span>
+    <% end %>
+    <% if move.ev_score.present? %>
+      <span class="ev-label <%= ev_class %>">EV <%= move.ev_score >= 8 ? "High" : move.ev_score >= 4 ? "Med" : "Low" %></span>
+    <% end %>
+  </div>
+</a>
