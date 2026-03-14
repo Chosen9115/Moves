@@ -1,5 +1,5 @@
 class AppPreference < ApplicationRecord
-  validates :ai_provider, inclusion: { in: ["openai"] }
+  validates :ai_provider, inclusion: { in: [ "openai" ] }
   validates :openai_model, presence: true
 
   def self.current

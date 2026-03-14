@@ -24,10 +24,10 @@ class Move < ApplicationRecord
     operations: 5
   }, prefix: true
 
-  PAYOFF_SCALE = [1, 2, 3, 5, 8, 13].freeze
+  PAYOFF_SCALE = [ 1, 2, 3, 5, 8, 13 ].freeze
   PAYOFF_TAG_OPTIONS = %w[revenue leverage learning risk_reduction relationship operations acquisition].freeze
-  PROBABILITY_SCALE = [10, 25, 40, 60, 75, 90].freeze
-  EFFORT_SCALE = [10, 30, 60, 120, 240, 480, 960].freeze
+  PROBABILITY_SCALE = [ 10, 25, 40, 60, 75, 90 ].freeze
+  EFFORT_SCALE = [ 10, 30, 60, 120, 240, 480, 960 ].freeze
 
   validates :title, presence: true
   validates :subjective_probability, inclusion: { in: PROBABILITY_SCALE }, allow_nil: true

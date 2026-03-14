@@ -8,6 +8,6 @@ class SignalImpactEngine
   def self.call(move, signal)
     base_probability = move.adjusted_probability || move.subjective_probability || move.base_rate || 25
     delta = DELTA_MAP.fetch(signal.direction, DELTA_MAP["neutral"]).fetch(signal.magnitude, 0)
-    [[base_probability + delta, 95].min, 5].max
+    [ [ base_probability + delta, 95 ].min, 5 ].max
   end
 end

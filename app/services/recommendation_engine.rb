@@ -1,5 +1,5 @@
 class RecommendationEngine
-  LABELS = ["Push now", "Good bet", "Optional", "Needs signal", "Probably dead", "Reassess"].freeze
+  LABELS = [ "Push now", "Good bet", "Optional", "Needs signal", "Probably dead", "Reassess" ].freeze
 
   def self.call(move)
     flags = StalenessDetector.call(move)

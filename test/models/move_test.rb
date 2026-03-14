@@ -18,7 +18,7 @@ class MoveTest < ActiveSupport::TestCase
   test "supports only known payoff tags" do
     move = Move.new(
       title: "Tag test",
-      payoff_tags: ["relationship", "unknown_tag"]
+      payoff_tags: [ "relationship", "unknown_tag" ]
     )
 
     assert_not move.valid?

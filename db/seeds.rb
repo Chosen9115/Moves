@@ -17,8 +17,8 @@ move.assign_attributes(
   subjective_probability: 40,
   adjusted_probability: 40,
   effort_minutes: 30,
-  advantages: ["warm intro"],
-  blockers: ["internal bandwidth"],
+  advantages: [ "warm intro" ],
+  blockers: [ "internal bandwidth" ],
   notes: "Initial seeded move"
 )
 move.save!

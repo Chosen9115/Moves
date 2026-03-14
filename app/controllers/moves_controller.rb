@@ -219,7 +219,7 @@ class MovesController < ApplicationController
     return unless suggestions[:notes].present?
 
     existing_notes = @move.notes.to_s
-    @move.notes = [existing_notes, "AI note: #{suggestions[:notes]}"].reject(&:blank?).join("\n\n")
+    @move.notes = [ existing_notes, "AI note: #{suggestions[:notes]}" ].reject(&:blank?).join("\n\n")
   end
 
   def parse_csv_list(value)

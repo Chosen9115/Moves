@@ -12,7 +12,7 @@ class WeeklyBriefService
 
     top_move = active_moves
       .select { |m| m.recommendation.present? }
-      .min_by { |m| [rec_priority(m.recommendation), -(m.ev_score || 0)] }
+      .min_by { |m| [ rec_priority(m.recommendation), -(m.ev_score || 0) ] }
 
     most_neglected_move = active_moves
       .select { |m| m.last_signal_at.present? }

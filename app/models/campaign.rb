@@ -13,7 +13,7 @@ class Campaign < ApplicationRecord
   before_validation :ensure_uuid
 
   def refresh_metrics!
-    active_moves = moves.where(stage: [Move.stages[:active], Move.stages[:inbox], Move.stages[:paused]])
+    active_moves = moves.where(stage: [ Move.stages[:active], Move.stages[:inbox], Move.stages[:paused] ])
     total = active_moves.where.not(ev_score: nil).sum(:ev_score)
     active_count = active_moves.where(stage: Move.stages[:active]).count
     signal_window = moves.joins(:move_signals).where(signals: { created_at: 14.days.ago..Time.current })
