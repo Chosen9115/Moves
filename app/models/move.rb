@@ -2,6 +2,7 @@ class Move < ApplicationRecord
   belongs_to :campaign, optional: true
   has_many :move_signals, class_name: "MoveSignal", foreign_key: :move_id, dependent: :destroy
   has_many :notes, dependent: :destroy
+  has_many :checklist_items, dependent: :destroy
 
   # Virtual field: the "Initial note" textarea on the move form. Persisted as a
   # Note record by the controller, never as a column (the legacy moves.notes

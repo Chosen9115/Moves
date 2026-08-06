@@ -1,0 +1,20 @@
+atl_item_one:
+  uuid: 5d9abc11-5555-4a5b-b555-77a8c3e50001
+  move: atl_pitch
+  title: Send intro email
+  done: false
+  position: 1
+
+atl_item_two:
+  uuid: 5d9abc11-5555-4a5b-b555-77a8c3e50002
+  move: atl_pitch
+  title: Book follow-up call
+  done: true
+  position: 2
+
+cabalo_item_one:
+  uuid: 5d9abc11-5555-4a5b-b555-77a8c3e50003
+  move: cabalo_followup
+  title: Draft proposal
+  done: false
+  position: 1

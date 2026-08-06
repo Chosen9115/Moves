@@ -12,6 +12,7 @@ class BackupImporter
       move_map = upsert_moves(payload.fetch("moves"), campaign_map)
       upsert_signals(payload.fetch("signals"), move_map)
       upsert_notes(payload.fetch("notes", []), move_map)
+      upsert_checklist_items(payload.fetch("checklist_items", []), move_map)
     end
   rescue JSON::ParserError
     raise ImportError, "Invalid JSON backup file"
@@ -127,4 +128,21 @@ class BackupImporter
     end
   end
   private_class_method :upsert_notes
+
+  def self.upsert_checklist_items(records, move_map)
+    records.each do |attrs|
+      move_id = move_map.fetch(attrs.fetch("move_uuid"))
+      item = ChecklistItem.find_or_initialize_by(uuid: attrs.fetch("uuid"))
+      item.assign_attributes(
+        move_id: move_id,
+        title: attrs["title"],
+        done: attrs.fetch("done", false),
+        position: attrs["position"],
+        created_at: attrs["created_at"],
+        updated_at: attrs["updated_at"]
+      )
+      item.save!
+    end
+  end
+  private_class_method :upsert_checklist_items
 end

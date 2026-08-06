@@ -4,6 +4,7 @@ class BackupNotesTest < ActiveSupport::TestCase
   # ── Legacy import (pre-Phase-3 backups) ────────────────────────────────
 
   test "BackupImporter converts a legacy inline move.notes string into a Note" do
+    ChecklistItem.delete_all
     Note.delete_all
     MoveSignal.delete_all
     Move.delete_all
@@ -75,7 +76,8 @@ class BackupNotesTest < ActiveSupport::TestCase
     # Capture the current export
     json = JSON.generate(BackupExporter.call)
 
-    # Destroy all notes, moves, campaigns (order matters for FKs)
+    # Destroy all dependent records first (order matters for FKs)
+    ChecklistItem.delete_all
     Note.delete_all
     MoveSignal.delete_all
     Move.delete_all
@@ -98,6 +100,7 @@ class BackupNotesTest < ActiveSupport::TestCase
   test "BackupImporter upserts notes — second import does not duplicate" do
     json = JSON.generate(BackupExporter.call)
     # First import
+    ChecklistItem.delete_all
     Note.delete_all
     MoveSignal.delete_all
     Move.delete_all

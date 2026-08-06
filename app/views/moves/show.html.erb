@@ -72,6 +72,34 @@ end %>
       </div>
     <% end %>
 
+    <%# ── Checklist section ── %>
+    <div class="detail-block" id="checklist-section">
+      <div class="detail-block-label">Checklist</div>
+      <div id="checklist-list">
+        <% @move.checklist_items.each do |checklist_item| %>
+          <%= render "moves/checklist_item", checklist_item: checklist_item, move: @move %>
+        <% end %>
+        <% if @move.checklist_items.none? %>
+          <div id="checklist-empty" class="empty-state" style="padding:12px 0; text-align:left; color:var(--muted); font-size:13px;">
+            No checklist items yet.
+          </div>
+        <% end %>
+      </div>
+
+      <%# Add-item form (Turbo Stream) %>
+      <%= form_with url: move_checklist_items_path(@move),
+                    data: { turbo: true },
+                    style: "margin-top:12px;" do |f| %>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <%= f.text_field :title,
+                           placeholder: "Add a checklist item...",
+                           required: true,
+                           style: "flex:1; font-size:13px;" %>
+          <%= f.submit "Add", class: "btn btn-dark btn-sm" %>
+        </div>
+      <% end %>
+    </div>
+
     <%# ── Notes section ── %>
     <div class="detail-block" id="notes-section">
       <div class="detail-block-label">Notes</div>
