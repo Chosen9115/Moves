@@ -33,14 +33,26 @@ USAGE
 # ---------------------------------------------------------------------------
 # HTTP helpers
 # ---------------------------------------------------------------------------
+LOOPBACK_HOSTS = %w[127.0.0.1 ::1 localhost].freeze
+
 def api_request(method, path, body: nil)
-  unless TOKEN
+  if TOKEN.nil? || TOKEN.strip.empty?
     warn "Error: MOVES_API_TOKEN environment variable is not set."
     warn "  Generate a token with: bin/rails moves:token:mint[name,scopes]"
     exit 1
   end
 
   uri = URI.parse("#{BASE_URL}#{path}")
+
+  # Never send the bearer token over plaintext HTTP to a non-loopback host — a
+  # later HTTPS redirect can't protect a token already sent in the clear. Only
+  # loopback may use http (local dev); override deliberately with MOVES_ALLOW_INSECURE=1.
+  if uri.scheme != "https" && !LOOPBACK_HOSTS.include?(uri.host) && ENV["MOVES_ALLOW_INSECURE"] != "1"
+    warn "Error: refusing to send a token over plaintext HTTP to #{uri.host}."
+    warn "  Use an https:// MOVES_API_URL (or MOVES_ALLOW_INSECURE=1 for deliberate local testing)."
+    exit 1
+  end
+
   http = Net::HTTP.new(uri.host, uri.port)
   http.use_ssl = uri.scheme == "https"
 

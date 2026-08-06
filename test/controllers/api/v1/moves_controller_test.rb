@@ -166,6 +166,25 @@ class Api::V1::MovesControllerTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
   end
 
+  test "422 (not 500) create with out-of-range enum value" do
+    post "/api/v1/moves",
+         params: { move: { title: "Bad enum", move_type: "not_a_type" } },
+         headers: bearer(@write_token_raw),
+         as: :json
+    assert_response :unprocessable_entity
+    assert_equal "invalid_argument", json_body.dig("error", "code")
+  end
+
+  test "stage cannot be set via the API — new moves stay in inbox" do
+    post "/api/v1/moves",
+         params: { move: { title: "Sneaky complete", stage: "completed" } },
+         headers: bearer(@write_token_raw),
+         as: :json
+    assert_response :created
+    assert_equal "inbox", json_body["stage"]
+    assert_nil Move.find(json_body["id"]).completed_at
+  end
+
   # -------------------------------------------------------------------------
   # update
   # -------------------------------------------------------------------------

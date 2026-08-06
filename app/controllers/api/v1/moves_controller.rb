@@ -5,8 +5,10 @@ module Api
       before_action :require_write_scope!, only: %i[create update]
       before_action :set_move, only: %i[show update]
 
+      MAX_PAGE = 10_000
+
       def index
-        page = [ params.fetch(:page, 1).to_i, 1 ].max
+        page = [ [ params.fetch(:page, 1).to_i, 1 ].max, MAX_PAGE ].min
         per  = [ [ params.fetch(:per, 50).to_i, 1 ].max, 100 ].min
 
         total  = Move.count
@@ -40,11 +42,15 @@ module Api
         render_error(404, "not_found", "Move not found.") unless @move
       end
 
+      # NOTE: :stage is intentionally NOT permitted — lifecycle transitions
+      # (active/paused/archived/completed) have dedicated semantics (e.g.
+      # completed_at) and must not be set by a blanket write. Expose explicit
+      # transition endpoints in a later phase if agents need them.
       def move_params
         params.require(:move).permit(
           :title, :description, :success_definition, :due_date,
           :effort_minutes, :subjective_probability, :payoff_value_normalized,
-          :payoff_type, :move_type, :stage
+          :payoff_type, :move_type
         )
       end
 

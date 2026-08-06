@@ -1,11 +1,19 @@
 module Api
   module V1
     class BaseController < ActionController::API
+      # An out-of-range enum value (e.g. move_type: "bogus") raises ArgumentError
+      # during assignment, before validations run — return a clean 422, not a 500.
+      rescue_from ArgumentError, with: :render_bad_argument
+
       before_action :authenticate_api_token!
 
       attr_reader :current_api_token
 
       private
+
+      def render_bad_argument(error)
+        render_error(422, "invalid_argument", error.message)
+      end
 
       def authenticate_api_token!
         raw = bearer_token

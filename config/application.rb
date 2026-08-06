@@ -21,7 +21,11 @@ module Moves
     # These settings can be overridden in specific environments using the files
     # in config/environments, which are processed later.
     #
-    # config.time_zone = "Central Time (US & Canada)"
+    # Day boundaries (e.g. the /api/v1/today endpoint) follow this zone. Defaults
+    # to UTC; set MOVES_TIME_ZONE (a valid ActiveSupport::TimeZone name, e.g.
+    # "Eastern Time (US & Canada)") on the server so "today" matches your locale.
+    config.time_zone = ENV.fetch("MOVES_TIME_ZONE", "UTC")
+
     # config.eager_load_paths << Rails.root.join("extras")
   end
 end
