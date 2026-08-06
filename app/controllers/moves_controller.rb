@@ -71,6 +71,7 @@ class MovesController < ApplicationController
     campaign_name = attrs.delete(:campaign_name)
     initial_note  = attrs.delete(:notes_text)
     @move = Move.new(attrs)
+    @move.notes_text = initial_note # keep the textarea populated if save fails and we re-render
     assign_campaign_from_name(@move, campaign_name)
     @move.stage = :inbox if @move.stage.blank?
 
@@ -89,6 +90,7 @@ class MovesController < ApplicationController
     attrs = move_params
     campaign_name = attrs.delete(:campaign_name)
     additional_note = attrs.delete(:notes_text)
+    @move.notes_text = additional_note # keep the textarea populated if update fails and we re-render
     assign_campaign_from_name(@move, campaign_name)
 
     if @move.update(attrs)

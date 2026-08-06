@@ -32,6 +32,10 @@ class MetisSyncJob < ApplicationJob
 
     # Configured: only mark synced when the put actually succeeded, so a transient
     # failure is left unsynced and retried on the note's next change.
+    #
+    # DEFERRED (single-user app): we do NOT auto-retry a failed put here — the note
+    # simply re-syncs the next time it's edited. If sync reliability matters later,
+    # add ActiveJob retry_on with backoff.
     if MetisClient.put_page(slug: note.metis_slug, title: build_title(note), content: note.body)
       mark_synced(note, synced_version)
     end

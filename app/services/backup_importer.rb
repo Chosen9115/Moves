@@ -77,6 +77,14 @@ class BackupImporter
       )
       move.save!
       map[move.uuid] = move.id
+
+      # Legacy backups (pre-Phase-3) carry notes inline as a move.notes string
+      # rather than in the top-level notes array — convert it to a Note so it
+      # isn't silently dropped. Idempotent by body.
+      legacy = attrs["notes"]
+      if legacy.is_a?(String) && legacy.present?
+        move.notes.find_or_create_by!(body: legacy) { |n| n.kind = "note"; n.source = "carlos" }
+      end
     end
   end
   private_class_method :upsert_moves

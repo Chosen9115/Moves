@@ -1,6 +1,32 @@
 require "test_helper"
 
 class BackupNotesTest < ActiveSupport::TestCase
+  # ── Legacy import (pre-Phase-3 backups) ────────────────────────────────
+
+  test "BackupImporter converts a legacy inline move.notes string into a Note" do
+    Note.delete_all
+    MoveSignal.delete_all
+    Move.delete_all
+    Campaign.delete_all
+
+    legacy = {
+      "campaigns" => [],
+      "moves" => [
+        { "uuid" => "legacy-move-1", "title" => "Legacy move", "move_type" => "tactical",
+          "stage" => "inbox", "notes" => "old inline note" }
+      ],
+      "signals" => []
+      # note: NO top-level "notes" array, like an old backup
+    }
+
+    BackupImporter.call(JSON.generate(legacy))
+
+    move = Move.find_by(uuid: "legacy-move-1")
+    assert move, "legacy move should import"
+    assert_equal [ "old inline note" ], move.notes.pluck(:body),
+      "the inline move.notes string should become a Note, not be dropped"
+  end
+
   # ── Exporter includes notes ────────────────────────────────────────────
 
   test "BackupExporter includes notes key with note data" do
