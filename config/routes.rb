@@ -1,4 +1,11 @@
 Rails.application.routes.draw do
+  namespace :api do
+    namespace :v1 do
+      resources :moves, only: %i[index show create update]
+      get "today", to: "today#index"
+    end
+  end
+
   resource :session, only: %i[new create destroy]
   root "focus#index"
 

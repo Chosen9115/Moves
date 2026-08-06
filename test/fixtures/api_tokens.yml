@@ -1,0 +1,2 @@
+# Fixtures for ApiToken — tokens are generated in-test via ApiToken.generate!
+# This file exists to satisfy the fixtures :all loader; no pre-seeded tokens.

@@ -1,0 +1,183 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "net/http"
+require "json"
+require "uri"
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+BASE_URL = (ENV["MOVES_API_URL"] || "http://127.0.0.1:3000").chomp("/")
+TOKEN    = ENV["MOVES_API_TOKEN"]
+
+USAGE = <<~USAGE
+  Moves CLI — thin client for the Moves JSON API
+
+  Usage:
+    moves list                                  List all moves (id, title, recommendation)
+    moves today                                 Show today's focus moves
+    moves show ID                               Show details for a specific move
+    moves add "Title" [OPTIONS]                 Create a new move
+
+  Options for 'add':
+    --effort N        Effort in minutes (10/30/60/120/240/480/960)
+    --probability P   Subjective probability (10/25/40/60/75/90)
+    --payoff X        Payoff value normalized (1/2/3/5/8/13)
+
+  Environment:
+    MOVES_API_URL     Base URL (default: http://127.0.0.1:3000)
+    MOVES_API_TOKEN   Bearer token (required)
+USAGE
+
+# ---------------------------------------------------------------------------
+# HTTP helpers
+# ---------------------------------------------------------------------------
+def api_request(method, path, body: nil)
+  unless TOKEN
+    warn "Error: MOVES_API_TOKEN environment variable is not set."
+    warn "  Generate a token with: bin/rails moves:token:mint[name,scopes]"
+    exit 1
+  end
+
+  uri = URI.parse("#{BASE_URL}#{path}")
+  http = Net::HTTP.new(uri.host, uri.port)
+  http.use_ssl = uri.scheme == "https"
+
+  request_class = { get: Net::HTTP::Get, post: Net::HTTP::Post, patch: Net::HTTP::Patch }[method]
+  req = request_class.new(uri.request_uri)
+  req["Authorization"] = "Bearer #{TOKEN}"
+  req["Accept"]        = "application/json"
+
+  if body
+    req["Content-Type"] = "application/json"
+    req.body = JSON.generate(body)
+  end
+
+  response = http.request(req)
+  parsed   = JSON.parse(response.body) rescue {}
+  [response.code.to_i, parsed]
+end
+
+def handle_error(code, body)
+  err = body.is_a?(Hash) ? body.dig("error", "message") : body.to_s
+  warn "Error #{code}: #{err}"
+  exit 1
+end
+
+# ---------------------------------------------------------------------------
+# Formatters
+# ---------------------------------------------------------------------------
+def print_move_row(m)
+  rec = m["recommendation"].to_s.ljust(12)
+  printf "  %-6s  %-12s  %s\n", m["id"], rec, m["title"]
+end
+
+def print_move_detail(m)
+  puts ""
+  puts "  ID:           #{m['id']} (uuid: #{m['uuid']})"
+  puts "  Title:        #{m['title']}"
+  puts "  Stage:        #{m['stage']}  |  Type: #{m['move_type']}"
+  puts "  Rec:          #{m['recommendation']}  |  EV: #{m['ev_score']}"
+  puts "  Effort:       #{m['effort_minutes']} min"
+  puts "  Probability:  #{m['subjective_probability']}%"
+  puts "  Payoff:       #{m['payoff_value_normalized']} (#{m['payoff_type']})"
+  puts "  Due:          #{m['due_date'] || 'none'}"
+  puts "  Description:  #{m['description'] || '—'}"
+  puts ""
+end
+
+# ---------------------------------------------------------------------------
+# Subcommands
+# ---------------------------------------------------------------------------
+def cmd_list
+  code, body = api_request(:get, "/api/v1/moves")
+  handle_error(code, body) unless code == 200
+
+  moves = body["moves"] || []
+  meta  = body["meta"]  || {}
+  puts "Moves (#{meta['total']} total, page #{meta['page']}):"
+  puts ""
+  printf "  %-6s  %-12s  %s\n", "ID", "RECOMMEND.", "TITLE"
+  puts "  " + "-" * 60
+  moves.each { |m| print_move_row(m) }
+  puts ""
+end
+
+def cmd_today
+  code, body = api_request(:get, "/api/v1/today")
+  handle_error(code, body) unless code == 200
+
+  moves = body["moves"] || []
+  puts "Today's focus (#{moves.size} moves):"
+  puts ""
+  printf "  %-6s  %-12s  %s\n", "ID", "RECOMMEND.", "TITLE"
+  puts "  " + "-" * 60
+  moves.each { |m| print_move_row(m) }
+  puts ""
+end
+
+def cmd_show(id)
+  unless id
+    warn "Usage: moves show ID"
+    exit 1
+  end
+  code, body = api_request(:get, "/api/v1/moves/#{id}")
+  handle_error(code, body) unless code == 200
+  print_move_detail(body)
+end
+
+def cmd_add(args)
+  title       = args.shift
+  effort      = nil
+  probability = nil
+  payoff      = nil
+
+  until args.empty?
+    flag = args.shift
+    val  = args.shift
+    case flag
+    when "--effort"      then effort      = val&.to_i
+    when "--probability" then probability = val&.to_i
+    when "--payoff"      then payoff      = val&.to_i
+    else
+      warn "Unknown option: #{flag}"
+      exit 1
+    end
+  end
+
+  unless title
+    warn "Usage: moves add \"Title\" [--effort N] [--probability P] [--payoff X]"
+    exit 1
+  end
+
+  payload = { move: { title: title } }
+  payload[:move][:effort_minutes]           = effort      if effort
+  payload[:move][:subjective_probability]   = probability if probability
+  payload[:move][:payoff_value_normalized]  = payoff      if payoff
+
+  code, body = api_request(:post, "/api/v1/moves", body: payload)
+  handle_error(code, body) unless code == 201
+
+  puts "Move created:"
+  print_move_detail(body)
+end
+
+# ---------------------------------------------------------------------------
+# Dispatch
+# ---------------------------------------------------------------------------
+subcommand = ARGV.shift
+
+case subcommand
+when "list"  then cmd_list
+when "today" then cmd_today
+when "show"  then cmd_show(ARGV.shift)
+when "add"   then cmd_add(ARGV.dup)
+when nil, "--help", "-h"
+  puts USAGE
+else
+  warn "Unknown subcommand: #{subcommand}"
+  warn ""
+  warn USAGE
+  exit 1
+end
