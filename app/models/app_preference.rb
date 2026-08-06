@@ -28,11 +28,12 @@ class AppPreference < ApplicationRecord
     count
   end
 
-  # Active Record non-deterministic encryption stores a JSON envelope like
-  # {"p":"…","h":{…}}; a raw value that isn't such an envelope is plaintext.
+  # Active Record non-deterministic encryption stores a JSON envelope carrying
+  # both a "p" (payload) and an "h" (headers) key; require both so a plaintext
+  # value that merely happens to be a JSON object isn't mistaken for ciphertext.
   def self.encrypted_payload?(raw)
     parsed = JSON.parse(raw)
-    parsed.is_a?(Hash) && parsed.key?("p")
+    parsed.is_a?(Hash) && parsed.key?("p") && parsed["h"].is_a?(Hash)
   rescue JSON::ParserError
     false
   end
