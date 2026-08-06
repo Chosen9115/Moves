@@ -293,34 +293,27 @@ def cmd_claim(id)
 end
 
 def cmd_report(args)
-  id     = args.shift
-  status = nil
-  result = nil
+  id            = args.shift
+  status        = nil
+  result        = nil
+  delegation_id = nil
 
   until args.empty?
     flag = args.shift
     val  = args.shift
     case flag
-    when "--status" then status = val
-    when "--result" then result = val
+    when "--status"        then status        = val
+    when "--result"        then result        = val
+    when "--delegation-id" then delegation_id = val
     else
       warn "Unknown option: #{flag}"
       exit 1
     end
   end
 
-  unless id && status
-    warn "Usage: moves report ID --status done|blocked|in_progress [--result TEXT]"
-    exit 1
-  end
-
-  # We need the delegation_id for the callback — first fetch the move.
-  show_code, show_body = api_request(:get, "/api/v1/moves/#{id}")
-  handle_error(show_code, show_body) unless show_code == 200
-
-  delegation_id = show_body.dig("delegation", "delegation_id")
-  unless delegation_id
-    warn "Error: move #{id} has no active delegation_id."
+  unless id && status && delegation_id
+    warn "Usage: moves report ID --delegation-id ID --status done|blocked|in_progress [--result TEXT]"
+    warn "  (get the delegation-id from `moves queue` or the claim response)"
     exit 1
   end
 

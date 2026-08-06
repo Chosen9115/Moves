@@ -90,7 +90,7 @@ class Api::V1::DelegationsControllerTest < ActionDispatch::IntegrationTest
     assert move_json
     assert_equal "darwin", move_json.dig("delegation", "assignee")
     assert_equal "delegated", move_json.dig("delegation", "delegation_state")
-    assert move_json.dig("delegation", "delegation_id").present?
+    assert move_json["delegation_id"].present?
   end
 
   private

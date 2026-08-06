@@ -38,10 +38,12 @@ class Api::V1::MoveDelegationsControllerTest < ActionDispatch::IntegrationTest
     d = json_body.dig("delegation")
     assert_equal "darwin", d["assignee"]
     assert_equal "delegated", d["delegation_state"]
-    assert d["delegation_id"].present?
+    # delegation_id + result are top-level on delegation-scoped responses (not in
+    # the shared _move "delegation" block that moves:read tokens see).
+    assert json_body["delegation_id"].present?
     assert d["delegated_at"].present?
     assert_nil d["reported_at"]
-    assert_nil d["delegation_result"]
+    assert_nil json_body["delegation_result"]
 
     @move.reload
     assert_equal "darwin", @move.assignee
@@ -55,7 +57,7 @@ class Api::V1::MoveDelegationsControllerTest < ActionDispatch::IntegrationTest
          params: { assignee: "darwin" },
          headers: bearer(@orchestrator_raw), as: :json
     assert_response :ok
-    first_id = json_body.dig("delegation", "delegation_id")
+    first_id = json_body["delegation_id"]
 
     # Move to done so it's not in-flight
     @move.update_columns(delegation_state: "done")
@@ -65,7 +67,7 @@ class Api::V1::MoveDelegationsControllerTest < ActionDispatch::IntegrationTest
          params: { assignee: "darwin" },
          headers: bearer(@orchestrator_raw), as: :json
     assert_response :ok
-    second_id = json_body.dig("delegation", "delegation_id")
+    second_id = json_body["delegation_id"]
 
     assert second_id.present?
     assert_not_equal first_id, second_id
@@ -121,7 +123,7 @@ class Api::V1::MoveDelegationsControllerTest < ActionDispatch::IntegrationTest
     assert body.key?("id")
     assert body.key?("title")
     assert body.key?("delegation")
-    assert body.dig("delegation", "delegation_id").present?
+    assert body["delegation_id"].present?
   end
 
   # ===========================================================================
@@ -260,6 +262,45 @@ class Api::V1::MoveDelegationsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "All done!", @move.delegation_result
   end
 
+  # ── Callback requires a prior claim, and rejects replays (atomic guards) ──
+
+  test "callback is rejected (409) if the move was not claimed first" do
+    setup_delegated_move(state: "delegated") # delegated, NOT accepted
+    post "/api/v1/moves/#{@move.id}/delegation/callback",
+         params: { delegation_id: @delegation_id, status: "done" },
+         headers: bearer(@darwin_raw), as: :json
+    assert_response :conflict
+    assert_equal "delegated", @move.reload.delegation_state
+  end
+
+  test "a replayed callback after done is rejected (409) and cannot re-mutate" do
+    setup_delegated_move(state: "accepted")
+    post "/api/v1/moves/#{@move.id}/delegation/callback",
+         params: { delegation_id: @delegation_id, status: "done", result: "first" },
+         headers: bearer(@darwin_raw), as: :json
+    assert_response :ok
+
+    # Replay the same callback with the same (now-consumed) nonce.
+    post "/api/v1/moves/#{@move.id}/delegation/callback",
+         params: { delegation_id: @delegation_id, status: "blocked", result: "tampered" },
+         headers: bearer(@darwin_raw), as: :json
+    assert_response :conflict
+    @move.reload
+    assert_equal "done", @move.delegation_state
+    assert_equal "first", @move.delegation_result
+  end
+
+  test "the delegation_id nonce is NOT exposed to a plain moves:read token" do
+    setup_delegated_move(state: "delegated")
+    get "/api/v1/moves/#{@move.id}", headers: bearer(@orchestrator_raw), as: :json
+    assert_response :ok
+    body = json_body
+    # assignee/state are visible, but the callback capability nonce + result are not.
+    assert_equal "darwin", body.dig("delegation", "assignee")
+    assert_not body.key?("delegation_id")
+    assert_not body["delegation"].key?("delegation_id")
+  end
+
   test "callback done completes move when stage=inbox" do
     @move.update_columns(stage: Move.stages[:inbox])
     setup_delegated_move
@@ -307,11 +348,11 @@ class Api::V1::MoveDelegationsControllerTest < ActionDispatch::IntegrationTest
     body = json_body
     assert_equal "blocked", body.dig("delegation", "delegation_state")
     assert_equal original_stage, body["stage"]
-    assert_equal "Stuck on auth.", body.dig("delegation", "delegation_result")
+    assert_equal "Stuck on auth.", body["delegation_result"]
     assert body.dig("delegation", "reported_at").present?
   end
 
-  test "callback in_progress sets state but leaves reported_at nil" do
+  test "callback in_progress sets state and records a heartbeat (reported_at)" do
     setup_delegated_move
 
     post "/api/v1/moves/#{@move.id}/delegation/callback",
@@ -321,7 +362,8 @@ class Api::V1::MoveDelegationsControllerTest < ActionDispatch::IntegrationTest
 
     body = json_body
     assert_equal "in_progress", body.dig("delegation", "delegation_state")
-    assert_nil body.dig("delegation", "reported_at")
+    # Every callback (incl. in_progress) is a heartbeat that resets the stall timer.
+    assert body.dig("delegation", "reported_at").present?
   end
 
   test "404 when move not found for callback" do
