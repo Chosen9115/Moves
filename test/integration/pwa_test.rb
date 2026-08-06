@@ -35,4 +35,15 @@ class PwaTest < ActionDispatch::IntegrationTest
     assert_match(/request\.method !== "GET"/, sw, "must skip non-GET (mutations)")
     assert File.exist?(Rails.root.join("public/offline.html"))
   end
+
+  test "service worker never caches HTML — only static assets, no redirects" do
+    sw = File.read(Rails.root.join("public/service-worker.js"))
+    # Only genuinely-static destinations are cacheable (no HTML documents).
+    assert_match(/STATIC_DESTINATIONS/, sw)
+    assert_match(/isStaticAsset/, sw)
+    # Navigations go to the network with an offline SHELL fallback, not a cached page.
+    assert_match(%r{caches\.match\("/offline\.html"\)}, sw)
+    # A login-redirect response must not be cached and pinned.
+    assert_match(/!response\.redirected/, sw)
+  end
 end
