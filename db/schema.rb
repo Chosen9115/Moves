@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_06_195227) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_06_214323) do
   create_table "api_tokens", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "last_used_at"
@@ -63,12 +63,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_06_195227) do
   create_table "moves", force: :cascade do |t|
     t.integer "adjusted_probability"
     t.json "advantages", default: [], null: false
+    t.string "assignee"
     t.integer "base_rate"
     t.json "blockers", default: [], null: false
     t.integer "campaign_id"
     t.datetime "completed_at"
     t.decimal "confidence_score", precision: 8, scale: 4
     t.datetime "created_at", null: false
+    t.datetime "delegated_at"
+    t.string "delegation_id"
+    t.text "delegation_result"
+    t.string "delegation_state", default: "none", null: false
     t.text "description"
     t.datetime "due_date"
     t.integer "effort_minutes"
@@ -79,12 +84,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_06_195227) do
     t.integer "payoff_value_normalized"
     t.decimal "payoff_value_raw", precision: 12, scale: 2
     t.string "recommendation"
+    t.datetime "reported_at"
     t.integer "stage", default: 0, null: false
     t.integer "subjective_probability"
     t.text "success_definition"
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.string "uuid", null: false
+    t.index ["assignee", "delegation_state"], name: "index_moves_on_assignee_and_delegation_state"
+    t.index ["assignee"], name: "index_moves_on_assignee"
     t.index ["campaign_id"], name: "index_moves_on_campaign_id"
     t.index ["payoff_value_normalized"], name: "index_moves_on_payoff_value_normalized"
     t.index ["recommendation"], name: "index_moves_on_recommendation"

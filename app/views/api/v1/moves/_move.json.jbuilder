@@ -14,3 +14,12 @@ json.due_date                 move.due_date
 json.campaign_id              move.campaign_id
 json.created_at               move.created_at
 json.updated_at               move.updated_at
+
+json.delegation do
+  json.assignee          move.assignee
+  json.delegation_state  move.delegation_state
+  json.delegation_id     move.delegation_id
+  json.delegation_result move.delegation_result
+  json.delegated_at      move.delegated_at
+  json.reported_at       move.reported_at
+end

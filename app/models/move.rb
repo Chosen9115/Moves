@@ -4,6 +4,17 @@ class Move < ApplicationRecord
   has_many :notes, dependent: :destroy
   has_many :checklist_items, dependent: :destroy
 
+  DELEGATION_STATES = %w[none delegated accepted in_progress done blocked stalled].freeze
+  validates :delegation_state, inclusion: { in: DELEGATION_STATES }
+
+  def delegated?
+    delegation_state == "delegated"
+  end
+
+  def delegation_in_flight?
+    delegation_state.in?(%w[delegated accepted in_progress])
+  end
+
   # Virtual field: the "Initial note" textarea on the move form. Persisted as a
   # Note record by the controller, never as a column (the legacy moves.notes
   # column was dropped — it collided with the has_many :notes association).
