@@ -4,6 +4,7 @@
 require "net/http"
 require "json"
 require "uri"
+require "ipaddr"
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -34,10 +35,15 @@ USAGE
 # HTTP helpers
 # ---------------------------------------------------------------------------
 # True for localhost, the whole 127.0.0.0/8 block, and IPv6 ::1 (URI#host returns
-# it bracketed as "[::1]"). Case-insensitive.
+# it bracketed as "[::1]"). Uses a real IP parse so a hostname that merely starts
+# with "127." (e.g. "127.example.com") is NOT treated as loopback.
 def loopback?(host)
   h = host.to_s.downcase.delete_prefix("[").delete_suffix("]")
-  h == "localhost" || h == "::1" || h.start_with?("127.")
+  return true if h == "localhost"
+
+  IPAddr.new(h).loopback?
+rescue IPAddr::InvalidAddressError
+  false
 end
 
 def api_request(method, path, body: nil)
@@ -73,7 +79,7 @@ def api_request(method, path, body: nil)
 
   response = http.request(req)
   parsed   = JSON.parse(response.body) rescue {}
-  [response.code.to_i, parsed]
+  [ response.code.to_i, parsed ]
 end
 
 def handle_error(code, body)
