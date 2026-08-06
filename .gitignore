@@ -48,5 +48,8 @@ tour-*.png
 # Kamal secrets
 /config/secret/
 
+# Claude Code — personal/local settings & hooks (may hold machine-specific paths)
+/.claude/settings.local.json
+
 # Locally bundled gems (bundle config path vendor/bundle)
 /vendor/bundle/
