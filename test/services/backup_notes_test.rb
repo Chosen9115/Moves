@@ -13,18 +13,20 @@ class BackupNotesTest < ActiveSupport::TestCase
       "campaigns" => [],
       "moves" => [
         { "uuid" => "legacy-move-1", "title" => "Legacy move", "move_type" => "tactical",
-          "stage" => "inbox", "notes" => "old inline note" }
+          "stage" => "inbox", "notes" => "old inline note",
+          "created_at" => "2026-01-01T00:00:00Z", "updated_at" => "2026-01-01T00:00:00Z" }
       ],
       "signals" => []
       # note: NO top-level "notes" array, like an old backup
     }
 
-    BackupImporter.call(JSON.generate(legacy))
+    # Import the same legacy backup twice — must not duplicate the note.
+    2.times { BackupImporter.call(JSON.generate(legacy)) }
 
     move = Move.find_by(uuid: "legacy-move-1")
     assert move, "legacy move should import"
     assert_equal [ "old inline note" ], move.notes.pluck(:body),
-      "the inline move.notes string should become a Note, not be dropped"
+      "the inline move.notes string should become exactly one Note (idempotent), not be dropped"
   end
 
   # ── Exporter includes notes ────────────────────────────────────────────

@@ -80,10 +80,12 @@ class BackupImporter
 
       # Legacy backups (pre-Phase-3) carry notes inline as a move.notes string
       # rather than in the top-level notes array — convert it to a Note so it
-      # isn't silently dropped. Idempotent by body.
+      # isn't silently dropped. Idempotent by (stripped) body, so re-importing the
+      # same backup doesn't duplicate. (Import is a manual, single-user, serial
+      # action, so a DB-level (move_id, body) uniqueness guard is unnecessary.)
       legacy = attrs["notes"]
-      if legacy.is_a?(String) && legacy.present?
-        move.notes.find_or_create_by!(body: legacy) { |n| n.kind = "note"; n.source = "carlos" }
+      if legacy.is_a?(String) && legacy.strip.present?
+        move.notes.find_or_create_by!(body: legacy.strip) { |n| n.kind = "note"; n.source = "carlos" }
       end
     end
   end
