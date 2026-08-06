@@ -1,6 +1,8 @@
 require "test_helper"
 
 class CampaignsControllerTest < ActionDispatch::IntegrationTest
+  setup { sign_in_as users(:one) }
+
   test "index loads" do
     get campaigns_path
     assert_response :success

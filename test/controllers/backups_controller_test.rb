@@ -1,6 +1,8 @@
 require "test_helper"
 
 class BackupsControllerTest < ActionDispatch::IntegrationTest
+  setup { sign_in_as users(:one) }
+
   test "export endpoint responds" do
     get export_backups_path
     assert_response :success

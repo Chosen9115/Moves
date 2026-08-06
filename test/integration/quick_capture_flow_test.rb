@@ -1,6 +1,8 @@
 require "test_helper"
 
 class QuickCaptureFlowTest < ActionDispatch::IntegrationTest
+  setup { sign_in_as users(:one) }
+
   test "creates move from title only and redirects to inbox" do
     assert_difference("Campaign.count", 1) do
       assert_difference("Move.count", 1) do

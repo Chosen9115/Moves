@@ -1,6 +1,8 @@
 require "test_helper"
 
 class SignalLoggingFlowTest < ActionDispatch::IntegrationTest
+  setup { sign_in_as users(:one) }
+
   test "logs signal and adjusts probability" do
     move = moves(:atl_pitch)
     original_probability = move.adjusted_probability

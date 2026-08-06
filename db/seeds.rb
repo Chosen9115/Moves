@@ -1,3 +1,24 @@
+# ── Admin user ──────────────────────────────────────────────────────────────
+# Credentials come from ENV so nothing sensitive is committed.
+# Set MOVES_ADMIN_EMAIL and MOVES_ADMIN_PASSWORD before running seeds.
+admin_email    = ENV.fetch("MOVES_ADMIN_EMAIL", "admin@moves.local")
+admin_password = ENV["MOVES_ADMIN_PASSWORD"]
+
+if admin_password.blank?
+  puts "WARNING: MOVES_ADMIN_PASSWORD is not set — skipping admin user creation."
+  puts "         Set the variable and re-run `bin/rails db:seed` to create the user."
+else
+  user = User.find_or_initialize_by(email_address: admin_email)
+  if user.new_record?
+    user.password = admin_password
+    user.save!
+    puts "Created admin user: #{admin_email}"
+  else
+    puts "Admin user already exists: #{admin_email}"
+  end
+end
+
+# ── Sample data ──────────────────────────────────────────────────────────────
 quick_pay = Campaign.find_or_create_by!(name: "Quick Pay Pilots") do |campaign|
   campaign.objective = "Book and launch top pilot opportunities"
 end
