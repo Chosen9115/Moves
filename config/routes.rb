@@ -1,7 +1,10 @@
 Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
-      resources :moves, only: %i[index show create update]
+      resources :moves, only: %i[index show create update] do
+        resources :notes, only: %i[index create]
+      end
+      get "notes/search", to: "notes#search", as: :notes_search
       get "today", to: "today#index"
     end
   end
@@ -43,5 +46,6 @@ Rails.application.routes.draw do
     end
 
     resources :signals, only: :create
+    resources :notes, only: %i[create destroy]
   end
 end

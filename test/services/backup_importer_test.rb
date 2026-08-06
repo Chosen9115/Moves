@@ -4,6 +4,7 @@ class BackupImporterTest < ActiveSupport::TestCase
   test "imports exported payload with upsert behavior" do
     json = JSON.generate(BackupExporter.call)
 
+    Note.delete_all
     MoveSignal.delete_all
     Move.delete_all
     Campaign.delete_all

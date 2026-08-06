@@ -1,0 +1,27 @@
+<div id="<%= dom_id(note) %>" style="padding:10px 0; border-bottom:1px solid var(--border);">
+  <div style="font-size:13px; line-height:1.6; color:var(--ink);">
+    <%= simple_format(note.body) %>
+  </div>
+  <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+    <span style="font-size:11px; color:var(--muted);">
+      <%= time_ago_in_words(note.created_at) %> ago
+    </span>
+    <span style="font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em;
+                 padding:1px 6px; border-radius:999px; background:var(--surface);
+                 color:<%= note.source == 'agent' ? 'var(--accent)' : 'var(--muted)' %>;">
+      <%= note.source %>
+    </span>
+    <% if note.kind == "prompt" %>
+      <span style="font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em;
+                   padding:1px 6px; border-radius:999px; background:var(--amber-soft); color:var(--amber);">
+        prompt
+      </span>
+    <% end %>
+    <%= button_to "×",
+                  move_note_path(move, note),
+                  method: :delete,
+                  class: "btn btn-ghost btn-sm",
+                  data: { turbo_stream: true },
+                  style: "margin-left:auto; padding:0 6px; color:var(--muted); font-size:14px;" %>
+  </div>
+</div>

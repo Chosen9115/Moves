@@ -1,6 +1,7 @@
 class Move < ApplicationRecord
   belongs_to :campaign, optional: true
   has_many :move_signals, class_name: "MoveSignal", foreign_key: :move_id, dependent: :destroy
+  has_many :notes, dependent: :destroy
 
   enum :move_type, {
     tactical: 0,

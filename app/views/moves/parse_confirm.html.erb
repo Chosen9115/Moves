@@ -86,8 +86,8 @@
       </div>
 
       <div class="field">
-        <%= f.label :notes %>
-        <%= f.text_area :notes, rows: 3 %>
+        <%= f.label :notes, "Initial note" %>
+        <%= f.text_area :notes, rows: 3, value: @parsed_notes_text, placeholder: "Additional context, links, notes..." %>
       </div>
 
       <div class="form-actions" style="margin-top:8px;">

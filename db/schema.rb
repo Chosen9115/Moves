@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_06_184447) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_06_190857) do
   create_table "api_tokens", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "last_used_at"
@@ -81,6 +81,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_06_184447) do
     t.index ["uuid"], name: "index_moves_on_uuid", unique: true
   end
 
+  create_table "notes", force: :cascade do |t|
+    t.text "body"
+    t.datetime "created_at", null: false
+    t.string "kind", default: "note"
+    t.string "metis_slug"
+    t.datetime "metis_synced_at"
+    t.integer "move_id"
+    t.string "source", default: "carlos"
+    t.datetime "updated_at", null: false
+    t.string "uuid", null: false
+    t.index ["move_id"], name: "index_notes_on_move_id"
+    t.index ["uuid"], name: "index_notes_on_uuid", unique: true
+  end
+
   create_table "projects", force: :cascade do |t|
     t.integer "cadence", default: 1
     t.string "color", default: "#1E5C42", null: false
@@ -125,6 +139,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_06_184447) do
 
   add_foreign_key "campaigns", "projects"
   add_foreign_key "moves", "campaigns"
+  add_foreign_key "notes", "moves"
   add_foreign_key "sessions", "users"
   add_foreign_key "signals", "moves"
 end
