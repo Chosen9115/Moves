@@ -33,7 +33,12 @@ USAGE
 # ---------------------------------------------------------------------------
 # HTTP helpers
 # ---------------------------------------------------------------------------
-LOOPBACK_HOSTS = %w[127.0.0.1 ::1 localhost].freeze
+# True for localhost, the whole 127.0.0.0/8 block, and IPv6 ::1 (URI#host returns
+# it bracketed as "[::1]"). Case-insensitive.
+def loopback?(host)
+  h = host.to_s.downcase.delete_prefix("[").delete_suffix("]")
+  h == "localhost" || h == "::1" || h.start_with?("127.")
+end
 
 def api_request(method, path, body: nil)
   if TOKEN.nil? || TOKEN.strip.empty?
@@ -47,7 +52,7 @@ def api_request(method, path, body: nil)
   # Never send the bearer token over plaintext HTTP to a non-loopback host — a
   # later HTTPS redirect can't protect a token already sent in the clear. Only
   # loopback may use http (local dev); override deliberately with MOVES_ALLOW_INSECURE=1.
-  if uri.scheme != "https" && !LOOPBACK_HOSTS.include?(uri.host) && ENV["MOVES_ALLOW_INSECURE"] != "1"
+  if uri.scheme != "https" && !loopback?(uri.host) && ENV["MOVES_ALLOW_INSECURE"] != "1"
     warn "Error: refusing to send a token over plaintext HTTP to #{uri.host}."
     warn "  Use an https:// MOVES_API_URL (or MOVES_ALLOW_INSECURE=1 for deliberate local testing)."
     exit 1

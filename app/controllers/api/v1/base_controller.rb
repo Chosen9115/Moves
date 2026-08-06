@@ -11,7 +11,12 @@ module Api
 
       private
 
+      # Only translate the specific "'x' is not a valid <enum>" ArgumentError that
+      # Rails raises on out-of-range enum assignment. Re-raise anything else so
+      # genuine server bugs still surface as 500s rather than being masked as 422s.
       def render_bad_argument(error)
+        raise error unless error.message.match?(/is not a valid/)
+
         render_error(422, "invalid_argument", error.message)
       end
 

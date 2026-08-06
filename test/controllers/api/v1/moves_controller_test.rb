@@ -198,6 +198,19 @@ class Api::V1::MovesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Updated Title", json_body["title"]
   end
 
+  test "stage cannot be set via the API on update" do
+    move = moves(:atl_pitch)
+    original_stage = move.stage
+    patch "/api/v1/moves/#{move.id}",
+          params: { move: { title: "Renamed", stage: "completed" } },
+          headers: bearer(@write_token_raw),
+          as: :json
+    assert_response :ok
+    assert_equal "Renamed", json_body["title"]
+    assert_equal original_stage, move.reload.stage
+    assert_nil move.completed_at
+  end
+
   test "404 update for non-existent move" do
     patch "/api/v1/moves/999999",
           params: { move: { title: "Ghost" } },
