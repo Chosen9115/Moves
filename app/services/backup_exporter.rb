@@ -52,7 +52,6 @@ class BackupExporter
         recommendation: move.recommendation,
         due_date: move.due_date,
         completed_at: move.completed_at,
-        notes: move.notes,
         created_at: move.created_at,
         updated_at: move.updated_at
       }

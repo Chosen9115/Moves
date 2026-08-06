@@ -18,17 +18,22 @@ class MetisSyncJob < ApplicationJob
     return unless note.kind == "note"  # prompts are not synced
     return if note.metis_synced_at.present? && note.metis_synced_at >= note.updated_at
 
+    # The exact version we're about to sync. We stamp metis_synced_at with THIS
+    # value (not Time.current) so a concurrent edit that bumps updated_at while we
+    # shell out stays newer than metis_synced_at and re-syncs — no permanent staleness.
+    synced_version = note.updated_at
+
     # Nothing to sync to (dev/test / Metis not configured): treat as done so we
     # don't retry forever. A later edit re-enqueues once METIS_CLI is set.
     unless MetisClient.configured?
-      mark_synced(note)
+      mark_synced(note, synced_version)
       return
     end
 
     # Configured: only mark synced when the put actually succeeded, so a transient
     # failure is left unsynced and retried on the note's next change.
     if MetisClient.put_page(slug: note.metis_slug, title: build_title(note), content: note.body)
-      mark_synced(note)
+      mark_synced(note, synced_version)
     end
   rescue StandardError => e
     Rails.logger.warn("[MetisSyncJob] Error syncing note #{note_id}: #{e.message}")
@@ -36,13 +41,10 @@ class MetisSyncJob < ApplicationJob
 
   private
 
-  # Skip callbacks (no re-enqueue) and preserve updated_at — only metis columns change.
-  def mark_synced(note)
-    note.update_columns(
-      metis_slug:      note.metis_slug,
-      metis_synced_at: Time.current,
-      updated_at:      note.updated_at
-    )
+  # Update only the metis columns via update_columns (no callbacks -> no re-enqueue,
+  # and updated_at is left untouched so a concurrent edit isn't reverted).
+  def mark_synced(note, synced_version)
+    note.update_columns(metis_slug: note.metis_slug, metis_synced_at: synced_version)
   end
 
   def build_title(note)

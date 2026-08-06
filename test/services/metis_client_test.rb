@@ -38,8 +38,8 @@ class MetisClientTest < ActiveSupport::TestCase
 
   test "Open3.capture3 is called with array splat to prevent shell injection" do
     source = File.read(Rails.root.join("app/services/metis_client.rb"))
-    assert_match(/Open3\.capture3\(\*cmd\)/, source,
-      "MetisClient must call Open3.capture3(*cmd) with array splat, not string interpolation")
+    assert_match(/Open3\.capture3\(\*\w+\)/, source,
+      "MetisClient must call Open3.capture3 with an array splat, not string interpolation")
     assert_no_match(/`.*\#{/, source,
       "MetisClient must not use backtick shell interpolation")
     assert_no_match(/system\(".*\#{/, source,

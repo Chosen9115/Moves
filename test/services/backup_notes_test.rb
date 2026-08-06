@@ -26,14 +26,15 @@ class BackupNotesTest < ActiveSupport::TestCase
     assert_equal moves(:atl_pitch).uuid,       note_payload[:move_uuid]
   end
 
-  test "BackupExporter preserves legacy notes field on moves for backward compat" do
+  test "BackupExporter no longer carries a notes field on move rows (column dropped)" do
     payload = BackupExporter.call
     move_payload = payload[:moves].find { |m| m[:uuid] == moves(:atl_pitch).uuid }
 
     assert move_payload, "atl_pitch should be in moves export"
-    # The legacy :notes column field should still appear on each move row
-    assert move_payload.key?(:notes),
-      "moves[] should still include the legacy :notes field for backward compat"
+    # The legacy moves.notes column was dropped — notes now live in the top-level
+    # :notes array, not inline on each move.
+    assert_not move_payload.key?(:notes),
+      "move rows should not include the removed legacy :notes column"
   end
 
   # ── Importer restores notes ────────────────────────────────────────────

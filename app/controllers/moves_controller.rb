@@ -182,17 +182,16 @@ class MovesController < ApplicationController
       :adjusted_probability,
       :effort_minutes,
       :due_date,
-      :notes,
+      :notes_text,
       :advantages_string,
       :blockers_string,
       advantages: [],
       blockers: []
     )
 
-    # Capture the notes textarea as notes_text (to create a Note record),
-    # not as move.notes — we stop writing to the moves.notes column going forward.
-    attrs = permitted.except(:advantages_string, :blockers_string, :payoff_tags_string, :notes)
-    attrs[:notes_text] = permitted[:notes].presence
+    # notes_text is a virtual field persisted as a Note record by create/update.
+    attrs = permitted.except(:advantages_string, :blockers_string, :payoff_tags_string, :notes_text)
+    attrs[:notes_text] = permitted[:notes_text].presence
     attrs[:advantages] = parse_csv_list(permitted[:advantages_string]) if permitted[:advantages_string].present?
     attrs[:blockers] = parse_csv_list(permitted[:blockers_string]) if permitted[:blockers_string].present?
     attrs[:payoff_tags] = parse_csv_list(permitted[:payoff_tags_string]).map(&:underscore) if permitted[:payoff_tags_string].present?

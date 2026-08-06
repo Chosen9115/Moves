@@ -3,6 +3,11 @@ class Move < ApplicationRecord
   has_many :move_signals, class_name: "MoveSignal", foreign_key: :move_id, dependent: :destroy
   has_many :notes, dependent: :destroy
 
+  # Virtual field: the "Initial note" textarea on the move form. Persisted as a
+  # Note record by the controller, never as a column (the legacy moves.notes
+  # column was dropped — it collided with the has_many :notes association).
+  attr_accessor :notes_text
+
   enum :move_type, {
     tactical: 0,
     strategic: 1

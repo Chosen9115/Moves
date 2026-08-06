@@ -19,7 +19,6 @@ atl_pitch:
   confidence_score: 0.5
   recommendation: Push now
   due_date: <%= 3.days.from_now %>
-  notes: Initial move
 
 cabalo_followup:
   uuid: 2a7fcb9d-2222-4e4c-a222-66f7b2f20002
@@ -41,4 +40,3 @@ cabalo_followup:
   ev_score: 2.0833
   confidence_score: 0.4
   recommendation: Good bet
-  notes: Waiting for response

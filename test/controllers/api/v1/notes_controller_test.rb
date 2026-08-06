@@ -74,6 +74,16 @@ class Api::V1::NotesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "note", body["kind"]
   end
 
+  test "client-supplied source is ignored — provenance is derived from the token" do
+    post "/api/v1/moves/#{@move.id}/notes",
+         params: { note: { body: "no impersonation", source: "carlos" } },
+         headers: bearer(@write_token_raw), as: :json
+    assert_response :created
+    # Token is named "notes_write" (not a known source) -> defaults to "agent",
+    # never the client-claimed "carlos".
+    assert_equal "agent", json_body["source"]
+  end
+
   test "201 create a prompt note (kind=prompt — agents save prompts)" do
     assert_difference "Note.count", 1 do
       post "/api/v1/moves/#{@move.id}/notes",

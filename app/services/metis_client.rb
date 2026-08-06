@@ -55,8 +55,13 @@ class MetisClient
   end
 
   private_class_method def self.run_command(cmd, timeout:, label:)
-    # Open3.capture3 with an ARRAY avoids shell string interpolation entirely.
-    Open3.capture3(*cmd)
+    # Wrap with coreutils `timeout` so a hung metis CLI can't block a worker or a
+    # web request forever (Open3.capture3 has no built-in timeout). `timeout` sends
+    # SIGTERM after `timeout` seconds, then SIGKILL 2s later; on timeout it exits
+    # non-zero so the caller treats it as a failure. capture3's array form avoids
+    # any shell parsing.
+    wrapped = [ "timeout", "-k", "2", timeout.to_s, *cmd ]
+    Open3.capture3(*wrapped)
   rescue Errno::ENOENT => e
     Rails.logger.warn("[MetisClient] CLI not found for #{label}: #{e.message}")
     [ "", "", nil ]

@@ -13,6 +13,7 @@ module Api
       # POST /api/v1/moves/:move_id/notes
       def create
         @note = @move.notes.build(note_params)
+        @note.source = api_source # provenance is derived from the token, never client-set
 
         if @note.save
           render :show, status: :created
@@ -26,10 +27,18 @@ module Api
         query = params[:q].to_s.strip
         limit = [ [ params.fetch(:limit, 10).to_i, 1 ].max, 50 ].min
 
-        metis_results = MetisClient.search(query: query, limit: limit)
-        local_notes   = Note.where("body LIKE ?", "%#{query}%").order(created_at: :desc).limit(limit)
+        if query.blank?
+          return render json: { error: { code: "bad_request", message: "q is required." } }, status: :bad_request
+        end
 
-        # Merge: build a unified list, deduplicating by uuid where possible
+        # Only surface Moves' own notes from Metis — never unrelated brain content.
+        metis_results = MetisClient.search(query: query, limit: limit).select do |r|
+          (r["slug"] || r[:slug]).to_s.start_with?("projects/moves-notes/")
+        end
+
+        escaped     = Note.sanitize_sql_like(query)
+        local_notes = Note.where("body LIKE ?", "%#{escaped}%").order(created_at: :desc).limit(limit)
+
         merged = merge_results(metis_results, local_notes)
 
         source_arms = []
@@ -50,8 +59,16 @@ module Api
         render_error(404, "not_found", "Move not found.") unless @move
       end
 
+      # :source is NOT client-settable (no provenance spoofing) — see api_source.
       def note_params
-        params.require(:note).permit(:body, :kind, :source)
+        params.require(:note).permit(:body, :kind)
+      end
+
+      # Derive the note's source from the authenticated token's name when it names
+      # a known source (darwin/olympus/agent/carlos), else default to "agent".
+      def api_source
+        name = current_api_token&.name.to_s.downcase
+        Note::VALID_SOURCES.include?(name) ? name : "agent"
       end
 
       def require_read_scope!

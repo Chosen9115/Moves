@@ -38,10 +38,10 @@ move.assign_attributes(
   adjusted_probability: 40,
   effort_minutes: 30,
   advantages: [ "warm intro" ],
-  blockers: [ "internal bandwidth" ],
-  notes: "Initial seeded move"
+  blockers: [ "internal bandwidth" ]
 )
 move.save!
+move.notes.find_or_create_by!(body: "Initial seeded move") { |n| n.kind = "note"; n.source = "carlos" }
 
 Move.find_or_create_by!(title: "Send investor follow-up") do |m|
   m.campaign = fundraising
