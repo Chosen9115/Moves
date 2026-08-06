@@ -1,6 +1,8 @@
 require "test_helper"
 
 class StateTransitionFlowTest < ActionDispatch::IntegrationTest
+  setup { sign_in_as users(:one) }
+
   test "pause archive complete and reactivate flows" do
     move = moves(:atl_pitch)
 

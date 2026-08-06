@@ -1,6 +1,8 @@
 require "test_helper"
 
 class SettingsControllerTest < ActionDispatch::IntegrationTest
+  setup { sign_in_as users(:one) }
+
   test "settings loads" do
     get settings_path
     assert_response :success

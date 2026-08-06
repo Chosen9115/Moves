@@ -1,6 +1,8 @@
 require "test_helper"
 
 class GuidedScoringFlowTest < ActionDispatch::IntegrationTest
+  setup { sign_in_as users(:one) }
+
   test "updates move with scoring inputs and recommendation" do
     move = moves(:cabalo_followup)
 

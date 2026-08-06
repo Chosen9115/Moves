@@ -1,6 +1,8 @@
 require "test_helper"
 
 class SignalsControllerTest < ActionDispatch::IntegrationTest
+  setup { sign_in_as users(:one) }
+
   test "create signal redirects to move" do
     move = moves(:atl_pitch)
 
