@@ -4,9 +4,16 @@ Rails.application.routes.draw do
       resources :moves, only: %i[index show create update] do
         resources :notes, only: %i[index create]
         resources :checklist_items, only: %i[index create update destroy]
+
+        member do
+          post :delegate,  to: "move_delegations#delegate_action"
+          post :claim,     to: "move_delegations#claim"
+          post "delegation/callback", to: "move_delegations#callback", as: :delegation_callback
+        end
       end
-      get "notes/search", to: "notes#search", as: :notes_search
-      get "today", to: "today#index"
+      get  "notes/search", to: "notes#search", as: :notes_search
+      get  "today",        to: "today#index"
+      get  "delegations",  to: "delegations#index"
     end
   end
 

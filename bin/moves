@@ -20,11 +20,25 @@ USAGE = <<~USAGE
     moves today                                 Show today's focus moves
     moves show ID                               Show details for a specific move
     moves add "Title" [OPTIONS]                 Create a new move
+    moves delegate ID --to AGENT               Delegate a move to an agent (scope: moves:write)
+    moves queue [--state STATE]                 Poll agent's delegation queue (scope: delegation:read)
+    moves claim ID                              Atomically claim a delegated move (scope: delegation:write)
+    moves report ID --status STATUS [--result R] Report progress/outcome (scope: delegation:write)
 
   Options for 'add':
     --effort N        Effort in minutes (10/30/60/120/240/480/960)
     --probability P   Subjective probability (10/25/40/60/75/90)
     --payoff X        Payoff value normalized (1/2/3/5/8/13)
+
+  Options for 'delegate':
+    --to AGENT        Name of the agent to delegate to (e.g. darwin)
+
+  Options for 'queue':
+    --state STATE     Filter by delegation_state (default: delegated)
+
+  Options for 'report':
+    --status STATUS   One of: in_progress, done, blocked
+    --result TEXT     Optional result text
 
   Environment:
     MOVES_API_URL     Base URL (default: http://127.0.0.1:3000)
@@ -67,7 +81,12 @@ def api_request(method, path, body: nil)
   http = Net::HTTP.new(uri.host, uri.port)
   http.use_ssl = uri.scheme == "https"
 
-  request_class = { get: Net::HTTP::Get, post: Net::HTTP::Post, patch: Net::HTTP::Patch }[method]
+  request_class = {
+    get:    Net::HTTP::Get,
+    post:   Net::HTTP::Post,
+    patch:  Net::HTTP::Patch,
+    delete: Net::HTTP::Delete
+  }[method]
   req = request_class.new(uri.request_uri)
   req["Authorization"] = "Bearer #{TOKEN}"
   req["Accept"]        = "application/json"
@@ -107,6 +126,18 @@ def print_move_detail(m)
   puts "  Payoff:       #{m['payoff_value_normalized']} (#{m['payoff_type']})"
   puts "  Due:          #{m['due_date'] || 'none'}"
   puts "  Description:  #{m['description'] || '—'}"
+
+  d = m["delegation"]
+  if d && d["delegation_state"] != "none"
+    puts "  Delegation:"
+    puts "    Assignee:  #{d['assignee']}"
+    puts "    State:     #{d['delegation_state']}"
+    # delegation_id + result are top-level on delegation-scoped responses.
+    puts "    ID:        #{m['delegation_id'] || '—'}"
+    puts "    Result:    #{m['delegation_result'] || '—'}"
+    puts "    Delegated: #{d['delegated_at'] || '—'}"
+    puts "    Reported:  #{d['reported_at'] || '—'}"
+  end
   puts ""
 end
 
@@ -186,16 +217,136 @@ def cmd_add(args)
   print_move_detail(body)
 end
 
+def cmd_delegate(args)
+  id  = args.shift
+  to  = nil
+
+  until args.empty?
+    flag = args.shift
+    val  = args.shift
+    case flag
+    when "--to" then to = val
+    else
+      warn "Unknown option: #{flag}"
+      exit 1
+    end
+  end
+
+  unless id && to
+    warn "Usage: moves delegate ID --to AGENT"
+    exit 1
+  end
+
+  code, body = api_request(:post, "/api/v1/moves/#{id}/delegate", body: { assignee: to })
+  handle_error(code, body) unless code == 200
+
+  puts "Move delegated to '#{to}':"
+  puts "  delegation_id: #{body['delegation_id']}"
+  print_move_detail(body)
+end
+
+def cmd_queue(args)
+  state = "delegated"
+
+  until args.empty?
+    flag = args.shift
+    val  = args.shift
+    case flag
+    when "--state" then state = val
+    else
+      warn "Unknown option: #{flag}"
+      exit 1
+    end
+  end
+
+  code, body = api_request(:get, "/api/v1/delegations?state=#{URI.encode_uri_component(state)}")
+  handle_error(code, body) unless code == 200
+
+  moves = body["moves"] || []
+  puts "Delegation queue (state=#{state}, #{moves.size} moves):"
+  puts ""
+  printf "  %-6s  %-24s  %-16s  %s\n", "ID", "DELEGATION_ID", "STATE", "TITLE"
+  puts "  " + "-" * 70
+  moves.each do |m|
+    d = m["delegation"] || {}
+    # delegation_id is top-level on delegation-scoped responses (not in the block).
+    printf "  %-6s  %-24s  %-16s  %s\n",
+           m["id"], m["delegation_id"].to_s[0, 22], d["delegation_state"], m["title"]
+  end
+  puts ""
+end
+
+def cmd_claim(id)
+  unless id
+    warn "Usage: moves claim ID"
+    exit 1
+  end
+
+  code, body = api_request(:post, "/api/v1/moves/#{id}/claim")
+  if code == 200
+    puts "Move claimed:"
+    print_move_detail(body)
+  elsif code == 409
+    warn "Conflict: #{body.dig('error', 'message')}"
+    exit 1
+  else
+    handle_error(code, body)
+  end
+end
+
+def cmd_report(args)
+  id            = args.shift
+  status        = nil
+  result        = nil
+  delegation_id = nil
+
+  until args.empty?
+    flag = args.shift
+    val  = args.shift
+    case flag
+    when "--status"        then status        = val
+    when "--result"        then result        = val
+    when "--delegation-id" then delegation_id = val
+    else
+      warn "Unknown option: #{flag}"
+      exit 1
+    end
+  end
+
+  unless id && status && delegation_id
+    warn "Usage: moves report ID --delegation-id ID --status done|blocked|in_progress [--result TEXT]"
+    warn "  (get the delegation-id from `moves queue` or the claim response)"
+    exit 1
+  end
+
+  payload = { delegation_id: delegation_id, status: status, result: result.to_s }
+  code, body = api_request(:post, "/api/v1/moves/#{id}/delegation/callback", body: payload)
+
+  if code == 200
+    puts "Reported '#{status}':"
+    print_move_detail(body)
+  elsif code == 409
+    warn "Conflict: #{body.dig('error', 'message')}"
+    exit 1
+  else
+    handle_error(code, body)
+  end
+end
+
 # ---------------------------------------------------------------------------
 # Dispatch
 # ---------------------------------------------------------------------------
 subcommand = ARGV.shift
 
 case subcommand
-when "list"  then cmd_list
-when "today" then cmd_today
-when "show"  then cmd_show(ARGV.shift)
-when "add"   then cmd_add(ARGV.dup)
+when "list"     then cmd_list
+when "today"    then cmd_today
+when "show"     then cmd_show(ARGV.shift)
+when "add"      then cmd_add(ARGV.dup)
+when "delegate" then cmd_delegate(ARGV.dup)
+when "queue"    then cmd_queue(ARGV.dup)
+when "claim"    then cmd_claim(ARGV.shift)
+when "report"   then cmd_report(ARGV.dup)
 when nil, "--help", "-h"
   puts USAGE
 else
