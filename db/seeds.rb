@@ -1,22 +1,21 @@
 # ── Admin user ──────────────────────────────────────────────────────────────
-# Credentials come from ENV so nothing sensitive is committed.
-# Set MOVES_ADMIN_EMAIL and MOVES_ADMIN_PASSWORD before running seeds.
-admin_email    = ENV.fetch("MOVES_ADMIN_EMAIL", "admin@moves.local")
-admin_password = ENV["MOVES_ADMIN_PASSWORD"]
+# Credentials come from ENV so nothing sensitive is committed. Both vars are
+# required — seeding aborts loudly rather than creating an account with an
+# unintended identifier or silently leaving the app with no way in.
+admin_email    = ENV["MOVES_ADMIN_EMAIL"].to_s.strip
+admin_password = ENV["MOVES_ADMIN_PASSWORD"].to_s
 
-if admin_password.blank?
-  puts "WARNING: MOVES_ADMIN_PASSWORD is not set — skipping admin user creation."
-  puts "         Set the variable and re-run `bin/rails db:seed` to create the user."
-else
-  user = User.find_or_initialize_by(email_address: admin_email)
-  if user.new_record?
-    user.password = admin_password
-    user.save!
-    puts "Created admin user: #{admin_email}"
-  else
-    puts "Admin user already exists: #{admin_email}"
-  end
+if admin_email.blank? || admin_password.blank?
+  abort "Seed aborted: set both MOVES_ADMIN_EMAIL and MOVES_ADMIN_PASSWORD before running `bin/rails db:seed`."
 end
+
+# Idempotent, and re-running with a new password rotates the existing account's
+# password (so a compromised credential is actually replaced on re-seed).
+user = User.find_or_initialize_by(email_address: admin_email)
+created = user.new_record?
+user.password = admin_password
+user.save!
+puts created ? "Created admin user: #{admin_email}" : "Updated admin user password: #{admin_email}"
 
 # ── Sample data ──────────────────────────────────────────────────────────────
 quick_pay = Campaign.find_or_create_by!(name: "Quick Pay Pilots") do |campaign|
