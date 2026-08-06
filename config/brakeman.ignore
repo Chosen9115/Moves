@@ -1,13 +1,6 @@
 {
   "ignored_warnings": [
-    {
-      "fingerprint": "40be17ee84017c91503dab23873e24bdd71665ab665bf6f351cfc09ff83e6582",
-      "warning_type": "Unmaintained Dependency",
-      "check_name": "EOLRuby",
-      "message": "Support for Ruby 3.2.9 ends on 2026-03-31",
-      "note": "Ruby 3.2 EOL acknowledged; upgrade planned"
-    }
   ],
-  "updated": "2026-03-14",
-  "brakeman_version": "7.0.2"
+  "updated": "2026-08-06",
+  "brakeman_version": "8.0.5"
 }

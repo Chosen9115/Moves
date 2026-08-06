@@ -47,3 +47,6 @@ tour-*.png
 
 # Kamal secrets
 /config/secret/
+
+# Locally bundled gems (bundle config path vendor/bundle)
+/vendor/bundle/
