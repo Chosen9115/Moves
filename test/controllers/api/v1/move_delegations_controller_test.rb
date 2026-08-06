@@ -29,6 +29,15 @@ class Api::V1::MoveDelegationsControllerTest < ActionDispatch::IntegrationTest
     assert_response :forbidden
   end
 
+  test "scope check precedes move lookup — wrong scope on a missing move is 403, not 404" do
+    # darwin lacks moves:write; hitting delegate on a NONEXISTENT move must 403
+    # (scope) before it can 404 (set_move) — no move-ID existence oracle.
+    post "/api/v1/moves/999999/delegate",
+         params: { assignee: "darwin" },
+         headers: bearer(@darwin_raw), as: :json
+    assert_response :forbidden
+  end
+
   test "delegate issues a delegation_id and sets state=delegated" do
     post "/api/v1/moves/#{@move.id}/delegate",
          params: { assignee: "darwin" },

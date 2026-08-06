@@ -132,8 +132,9 @@ def print_move_detail(m)
     puts "  Delegation:"
     puts "    Assignee:  #{d['assignee']}"
     puts "    State:     #{d['delegation_state']}"
-    puts "    ID:        #{d['delegation_id']}"
-    puts "    Result:    #{d['delegation_result'] || '—'}"
+    # delegation_id + result are top-level on delegation-scoped responses.
+    puts "    ID:        #{m['delegation_id'] || '—'}"
+    puts "    Result:    #{m['delegation_result'] || '—'}"
     puts "    Delegated: #{d['delegated_at'] || '—'}"
     puts "    Reported:  #{d['reported_at'] || '—'}"
   end
@@ -268,8 +269,9 @@ def cmd_queue(args)
   puts "  " + "-" * 70
   moves.each do |m|
     d = m["delegation"] || {}
+    # delegation_id is top-level on delegation-scoped responses (not in the block).
     printf "  %-6s  %-24s  %-16s  %s\n",
-           m["id"], d["delegation_id"].to_s[0, 22], d["delegation_state"], m["title"]
+           m["id"], m["delegation_id"].to_s[0, 22], d["delegation_state"], m["title"]
   end
   puts ""
 end

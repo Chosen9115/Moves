@@ -72,7 +72,11 @@ module Api
 
       # POST /api/v1/moves/:id/delegation/callback  (scope: delegation:write — agent)
       def callback
-        # Clear 403 for a move not assigned to this agent (assignee is stable).
+        # Clear 403 for a move not assigned to this agent (assignee is stable). The
+        # atomic update below ALSO enforces assignee, so this is only for a friendlier
+        # error. It distinguishes 404 (no such move) from 403 (exists, not yours) — an
+        # existence oracle that's acceptable for this single-user app (Carlos owns all
+        # tokens); drop it if the token model ever becomes multi-tenant.
         unless @move.assignee == current_api_token.name
           return render_error(403, "forbidden", "This move is not assigned to your token.")
         end
@@ -107,11 +111,17 @@ module Api
                               "or the delegation already completed.")
         end
 
-        # done -> complete the move if it's still on an active surface.
+        # done -> complete the move if it's still on an active surface. Guard the
+        # WHERE with the SAME delegation_id + delegation_state="done" we just set,
+        # so a concurrent re-delegation (which mints a new nonce + flips state) in
+        # between the two updates can't have its fresh move completed by us.
         if status == "done"
-          Move.where(id: @move.id, stage: COMPLETABLE).update_all(
-            stage: "completed", completed_at: now, updated_at: now
-          )
+          Move.where(
+            id:               @move.id,
+            delegation_id:    params[:delegation_id].to_s,
+            delegation_state: "done",
+            stage:            COMPLETABLE
+          ).update_all(stage: "completed", completed_at: now, updated_at: now)
         end
 
         @move.reload
