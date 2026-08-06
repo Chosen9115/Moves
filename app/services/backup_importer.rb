@@ -11,6 +11,7 @@ class BackupImporter
       campaign_map = upsert_campaigns(payload.fetch("campaigns"))
       move_map = upsert_moves(payload.fetch("moves"), campaign_map)
       upsert_signals(payload.fetch("signals"), move_map)
+      upsert_notes(payload.fetch("notes", []), move_map)
     end
   rescue JSON::ParserError
     raise ImportError, "Invalid JSON backup file"
@@ -71,12 +72,21 @@ class BackupImporter
         recommendation: attrs["recommendation"],
         due_date: attrs["due_date"],
         completed_at: attrs["completed_at"],
-        notes: attrs["notes"],
         created_at: attrs["created_at"],
         updated_at: attrs["updated_at"]
       )
       move.save!
       map[move.uuid] = move.id
+
+      # Legacy backups (pre-Phase-3) carry notes inline as a move.notes string
+      # rather than in the top-level notes array — convert it to a Note so it
+      # isn't silently dropped. Idempotent by (stripped) body, so re-importing the
+      # same backup doesn't duplicate. (Import is a manual, single-user, serial
+      # action, so a DB-level (move_id, body) uniqueness guard is unnecessary.)
+      legacy = attrs["notes"]
+      if legacy.is_a?(String) && legacy.strip.present?
+        move.notes.find_or_create_by!(body: legacy.strip) { |n| n.kind = "note"; n.source = "carlos" }
+      end
     end
   end
   private_class_method :upsert_moves
@@ -98,4 +108,23 @@ class BackupImporter
     end
   end
   private_class_method :upsert_signals
+
+  def self.upsert_notes(records, move_map)
+    records.each do |attrs|
+      move_id = attrs["move_uuid"].present? ? move_map[attrs["move_uuid"]] : nil
+      note = Note.find_or_initialize_by(uuid: attrs.fetch("uuid"))
+      note.assign_attributes(
+        move_id: move_id,
+        body: attrs["body"],
+        kind: attrs.fetch("kind", "note"),
+        source: attrs.fetch("source", "carlos"),
+        metis_slug: attrs["metis_slug"],
+        metis_synced_at: attrs["metis_synced_at"],
+        created_at: attrs["created_at"],
+        updated_at: attrs["updated_at"]
+      )
+      note.save!
+    end
+  end
+  private_class_method :upsert_notes
 end

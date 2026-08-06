@@ -1,0 +1,9 @@
+json.uuid            note.uuid
+json.move_id         note.move_id
+json.body            note.body
+json.kind            note.kind
+json.source          note.source
+json.metis_slug      note.metis_slug
+json.metis_synced_at note.metis_synced_at
+json.created_at      note.created_at
+json.updated_at      note.updated_at

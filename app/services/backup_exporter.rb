@@ -4,7 +4,8 @@ class BackupExporter
       exported_at: Time.current.iso8601,
       campaigns: campaigns_payload,
       moves: moves_payload,
-      signals: signals_payload
+      signals: signals_payload,
+      notes: notes_payload
     }
   end
 
@@ -51,7 +52,6 @@ class BackupExporter
         recommendation: move.recommendation,
         due_date: move.due_date,
         completed_at: move.completed_at,
-        notes: move.notes,
         created_at: move.created_at,
         updated_at: move.updated_at
       }
@@ -74,4 +74,21 @@ class BackupExporter
     end
   end
   private_class_method :signals_payload
+
+  def self.notes_payload
+    Note.order(:created_at).map do |note|
+      {
+        uuid: note.uuid,
+        move_uuid: note.move&.uuid,
+        body: note.body,
+        kind: note.kind,
+        source: note.source,
+        metis_slug: note.metis_slug,
+        metis_synced_at: note.metis_synced_at,
+        created_at: note.created_at,
+        updated_at: note.updated_at
+      }
+    end
+  end
+  private_class_method :notes_payload
 end

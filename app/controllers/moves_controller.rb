@@ -48,6 +48,7 @@ class MovesController < ApplicationController
     end
 
     @raw_text = text
+    @parsed_notes_text = @parsed["notes"].presence
     @move = Move.new(
       title: @parsed["title"],
       success_definition: @parsed["success_definition"],
@@ -56,7 +57,6 @@ class MovesController < ApplicationController
       subjective_probability: @parsed["subjective_probability"],
       effort_minutes: @parsed["effort_minutes"],
       due_date: @parsed["due_date"],
-      notes: @parsed["notes"],
       stage: :inbox
     )
     @campaign_name = @parsed["campaign_name"]
@@ -69,11 +69,14 @@ class MovesController < ApplicationController
   def create
     attrs = move_params
     campaign_name = attrs.delete(:campaign_name)
+    initial_note  = attrs.delete(:notes_text)
     @move = Move.new(attrs)
+    @move.notes_text = initial_note # keep the textarea populated if save fails and we re-render
     assign_campaign_from_name(@move, campaign_name)
     @move.stage = :inbox if @move.stage.blank?
 
     if @move.save
+      create_note_on_move(@move, initial_note, source: "carlos") if initial_note.present?
       redirect_target = params[:redirect_to].presence || inbox_path
       redirect_to redirect_target, notice: "Move captured."
     else
@@ -86,9 +89,12 @@ class MovesController < ApplicationController
   def update
     attrs = move_params
     campaign_name = attrs.delete(:campaign_name)
+    additional_note = attrs.delete(:notes_text)
+    @move.notes_text = additional_note # keep the textarea populated if update fails and we re-render
     assign_campaign_from_name(@move, campaign_name)
 
     if @move.update(attrs)
+      create_note_on_move(@move, additional_note, source: "carlos") if additional_note.present?
       redirect_to move_path(@move), notice: "Move updated."
     else
       render :edit, status: :unprocessable_entity
@@ -178,14 +184,16 @@ class MovesController < ApplicationController
       :adjusted_probability,
       :effort_minutes,
       :due_date,
-      :notes,
+      :notes_text,
       :advantages_string,
       :blockers_string,
       advantages: [],
       blockers: []
     )
 
-    attrs = permitted.except(:advantages_string, :blockers_string, :payoff_tags_string)
+    # notes_text is a virtual field persisted as a Note record by create/update.
+    attrs = permitted.except(:advantages_string, :blockers_string, :payoff_tags_string, :notes_text)
+    attrs[:notes_text] = permitted[:notes_text].presence
     attrs[:advantages] = parse_csv_list(permitted[:advantages_string]) if permitted[:advantages_string].present?
     attrs[:blockers] = parse_csv_list(permitted[:blockers_string]) if permitted[:blockers_string].present?
     attrs[:payoff_tags] = parse_csv_list(permitted[:payoff_tags_string]).map(&:underscore) if permitted[:payoff_tags_string].present?
@@ -218,8 +226,15 @@ class MovesController < ApplicationController
 
     return unless suggestions[:notes].present?
 
-    existing_notes = @move.notes.to_s
-    @move.notes = [ existing_notes, "AI note: #{suggestions[:notes]}" ].reject(&:blank?).join("\n\n")
+    @move.notes.create!(
+      body: "AI note: #{suggestions[:notes]}",
+      kind: "note",
+      source: "agent"
+    )
+  end
+
+  def create_note_on_move(move, body, source: "carlos")
+    move.notes.create!(body: body, kind: "note", source: source)
   end
 
   def parse_csv_list(value)

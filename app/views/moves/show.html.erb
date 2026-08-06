@@ -72,12 +72,34 @@ end %>
       </div>
     <% end %>
 
-    <% if @move.notes.present? %>
-      <div class="detail-block">
-        <div class="detail-block-label">Notes</div>
-        <div class="detail-block-text"><%= simple_format(@move.notes) %></div>
+    <%# ── Notes section ── %>
+    <div class="detail-block" id="notes-section">
+      <div class="detail-block-label">Notes</div>
+      <div id="notes-list">
+        <% @move.notes.order(created_at: :desc).each do |note| %>
+          <%= render "moves/note", note: note, move: @move %>
+        <% end %>
+        <% if @move.notes.none? %>
+          <div id="notes-empty" class="empty-state" style="padding:12px 0; text-align:left; color:var(--muted); font-size:13px;">
+            No notes yet.
+          </div>
+        <% end %>
       </div>
-    <% end %>
+
+      <%# Add-note form (Turbo Stream) %>
+      <%= form_with url: move_notes_path(@move),
+                    data: { turbo: true },
+                    style: "margin-top:12px;" do |f| %>
+        <div style="display:flex; gap:8px; align-items:flex-start;">
+          <%= f.text_area :body,
+                          placeholder: "Add a note...",
+                          rows: 2,
+                          required: true,
+                          style: "flex:1; font-size:13px;" %>
+          <%= f.submit "Add", class: "btn btn-dark btn-sm", style: "align-self:flex-end;" %>
+        </div>
+      <% end %>
+    </div>
 
     <%# Signal history %>
     <div>

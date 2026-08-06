@@ -1,0 +1,20 @@
+atl_note_one:
+  uuid: 4c8fcb9d-4444-4e4c-a444-66f7b2f40001
+  move: atl_pitch
+  body: Initial note for ATL
+  kind: note
+  source: carlos
+
+cabalo_note_one:
+  uuid: 4c8fcb9d-4444-4e4c-a444-66f7b2f40002
+  move: cabalo_followup
+  body: Waiting for response from Cabalo
+  kind: note
+  source: carlos
+
+atl_prompt_one:
+  uuid: 4c8fcb9d-4444-4e4c-a444-66f7b2f40003
+  move: atl_pitch
+  body: What is the best approach?
+  kind: prompt
+  source: agent
