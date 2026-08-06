@@ -22,4 +22,17 @@ class AuthenticationFlowTest < ActionDispatch::IntegrationTest
     get settings_path
     assert_redirected_to new_session_path
   end
+
+  test "DELETE /session revokes the session server-side" do
+    user = users(:one)
+    sign_in_as user
+
+    assert_difference -> { user.sessions.count }, -1 do
+      delete session_path
+    end
+    assert_redirected_to new_session_path
+
+    get settings_path
+    assert_redirected_to new_session_path
+  end
 end
