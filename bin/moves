@@ -241,7 +241,7 @@ def cmd_delegate(args)
   handle_error(code, body) unless code == 200
 
   puts "Move delegated to '#{to}':"
-  puts "  delegation_id: #{body.dig('delegation', 'delegation_id')}"
+  puts "  delegation_id: #{body['delegation_id']}"
   print_move_detail(body)
 end
 
