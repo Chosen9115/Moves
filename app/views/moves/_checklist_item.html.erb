@@ -1,0 +1,22 @@
+<div id="<%= dom_id(checklist_item) %>" style="padding:8px 0; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;">
+  <%= form_with url: move_checklist_item_path(move, checklist_item),
+                scope: :checklist_item,
+                method: :patch,
+                data: { turbo_stream: true },
+                style: "display:contents;" do |f| %>
+    <%= f.check_box :done,
+                    checked: checklist_item.done,
+                    style: "cursor:pointer;",
+                    onchange: "this.form.requestSubmit()" %>
+  <% end %>
+  <span style="flex:1; font-size:13px; color:var(--ink);
+               <%= 'text-decoration:line-through; color:var(--muted);' if checklist_item.done %>">
+    <%= checklist_item.title %>
+  </span>
+  <%= button_to "×",
+                move_checklist_item_path(move, checklist_item),
+                method: :delete,
+                class: "btn btn-ghost btn-sm",
+                data: { turbo_stream: true },
+                style: "margin-left:auto; padding:0 6px; color:var(--muted); font-size:14px;" %>
+</div>

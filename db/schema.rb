@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_06_193000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_06_195227) do
   create_table "api_tokens", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "last_used_at"
@@ -46,6 +46,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_06_193000) do
     t.index ["project_id"], name: "index_campaigns_on_project_id"
     t.index ["status"], name: "index_campaigns_on_status"
     t.index ["uuid"], name: "index_campaigns_on_uuid", unique: true
+  end
+
+  create_table "checklist_items", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "done", default: false, null: false
+    t.integer "move_id", null: false
+    t.integer "position"
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.string "uuid", null: false
+    t.index ["move_id"], name: "index_checklist_items_on_move_id"
+    t.index ["uuid"], name: "index_checklist_items_on_uuid", unique: true
   end
 
   create_table "moves", force: :cascade do |t|
@@ -137,6 +149,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_06_193000) do
   end
 
   add_foreign_key "campaigns", "projects"
+  add_foreign_key "checklist_items", "moves"
   add_foreign_key "moves", "campaigns"
   add_foreign_key "notes", "moves"
   add_foreign_key "sessions", "users"

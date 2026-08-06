@@ -3,6 +3,7 @@ Rails.application.routes.draw do
     namespace :v1 do
       resources :moves, only: %i[index show create update] do
         resources :notes, only: %i[index create]
+        resources :checklist_items, only: %i[index create update destroy]
       end
       get "notes/search", to: "notes#search", as: :notes_search
       get "today", to: "today#index"
@@ -47,5 +48,6 @@ Rails.application.routes.draw do
 
     resources :signals, only: :create
     resources :notes, only: %i[create destroy]
+    resources :checklist_items, only: %i[create update destroy]
   end
 end

@@ -5,7 +5,8 @@ class BackupExporter
       campaigns: campaigns_payload,
       moves: moves_payload,
       signals: signals_payload,
-      notes: notes_payload
+      notes: notes_payload,
+      checklist_items: checklist_items_payload
     }
   end
 
@@ -91,4 +92,19 @@ class BackupExporter
     end
   end
   private_class_method :notes_payload
+
+  def self.checklist_items_payload
+    ChecklistItem.order(:created_at).map do |item|
+      {
+        uuid: item.uuid,
+        move_uuid: item.move.uuid,
+        title: item.title,
+        done: item.done,
+        position: item.position,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }
+    end
+  end
+  private_class_method :checklist_items_payload
 end
