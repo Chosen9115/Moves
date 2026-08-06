@@ -88,6 +88,7 @@ end %>
 
       <%# Add-item form (Turbo Stream) %>
       <%= form_with url: move_checklist_items_path(@move),
+                    scope: :checklist_item,
                     data: { turbo: true },
                     style: "margin-top:12px;" do |f| %>
         <div style="display:flex; gap:8px; align-items:center;">

@@ -1,7 +1,7 @@
 class ChecklistItem < ApplicationRecord
   belongs_to :move
 
-  validates :title, presence: true
+  validates :title, presence: true, length: { maximum: 500 }
 
   before_validation :ensure_uuid
   before_create :assign_position

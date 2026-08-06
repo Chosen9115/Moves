@@ -49,8 +49,9 @@ module Api
         render_error(404, "not_found", "ChecklistItem not found.") unless @checklist_item
       end
 
+      # :position is auto-assigned server-side (no client reordering endpoint yet).
       def checklist_item_params
-        params.require(:checklist_item).permit(:title, :done, :position)
+        params.require(:checklist_item).permit(:title, :done)
       end
 
       def require_read_scope!

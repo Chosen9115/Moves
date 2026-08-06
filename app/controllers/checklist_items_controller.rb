@@ -21,9 +21,11 @@ class ChecklistItemsController < ApplicationController
     else
       respond_to do |format|
         format.turbo_stream do
-          render turbo_stream: turbo_stream.replace(
-            "checklist-section",
-            html: "<p style='color:var(--danger);'>#{@checklist_item.errors.full_messages.to_sentence}</p>"
+          # Prepend the error without destroying the existing list/form.
+          message = ERB::Util.html_escape(@checklist_item.errors.full_messages.to_sentence)
+          render turbo_stream: turbo_stream.prepend(
+            "checklist-list",
+            html: "<p style='color:var(--danger); font-size:12px;'>#{message}</p>"
           )
         end
         format.html { redirect_to move_path(@move), alert: @checklist_item.errors.full_messages.to_sentence }
@@ -78,7 +80,8 @@ class ChecklistItemsController < ApplicationController
     @checklist_item = @move.checklist_items.find(params[:id])
   end
 
+  # :position is auto-assigned server-side (no client reordering endpoint yet).
   def checklist_item_params
-    params.require(:checklist_item).permit(:title, :done, :position)
+    params.require(:checklist_item).permit(:title, :done)
   end
 end

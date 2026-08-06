@@ -7,6 +7,17 @@ class ChecklistItemsControllerTest < ActionDispatch::IntegrationTest
     @item = checklist_items(:atl_item_one)
   end
 
+  # ── Rendered forms use the nested checklist_item[...] param shape ──────
+  # (regression: the forms previously submitted top-level params, which raised
+  # ParameterMissing on real UI use even though the controller tests passed.)
+
+  test "move show renders checklist forms with nested checklist_item param names" do
+    get move_path(@move)
+    assert_response :success
+    assert_select "form input[name=?]", "checklist_item[title]"
+    assert_select "form input[name=?]", "checklist_item[done]"
+  end
+
   # ── CREATE ────────────────────────────────────────────────────────────
 
   test "creates a checklist item and redirects" do
