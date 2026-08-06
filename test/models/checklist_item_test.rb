@@ -14,6 +14,19 @@ class ChecklistItemTest < ActiveSupport::TestCase
     assert_includes item.errors[:title], "can't be blank"
   end
 
+  test "title is capped at 500 characters" do
+    assert ChecklistItem.new(title: "a" * 500, move: moves(:atl_pitch)).valid?
+    too_long = ChecklistItem.new(title: "a" * 501, move: moves(:atl_pitch))
+    assert_not too_long.valid?
+    assert_includes too_long.errors[:title], "is too long (maximum is 500 characters)"
+  end
+
+  test "rejects a negative position (e.g. from a tampered backup import)" do
+    item = ChecklistItem.new(title: "x", move: moves(:atl_pitch), position: -1)
+    assert_not item.valid?
+    assert item.errors[:position].any?
+  end
+
   test "invalid without move" do
     item = ChecklistItem.new(title: "No move")
     assert_not item.valid?

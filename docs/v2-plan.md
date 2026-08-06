@@ -197,3 +197,24 @@ small PRs, not one mega-PR (Fable S4).
   holds the only copy of federated state (Fable S6).
 - Follow the army-of-agents pipeline (`CLAUDE.md`); persist durable state to Metis
   (`projects/moves-task-manager`).
+
+## 13. Deferred hardening backlog
+
+Accepted, deliberate deferrals from shipped phases — safe for a single-user app
+today, but **required before internet/tunnel exposure or if the threat model
+changes**. Tracked here (not just in commit messages) so they aren't lost.
+
+**Before the API is exposed over the tunnel (from Phase 2):**
+- Rate limiting (`rack-attack`), especially on `/api/v1/today` and repeated 401s.
+- Request **Host Authorization** (`config.hosts`) — needs the real tunnel hostname.
+- Reject non-JSON content type with `415` on API writes.
+- Set `MOVES_TIME_ZONE` on the server so `/api/v1/today`'s day boundary is correct.
+
+**Metis notes sync (Phase 3):**
+- Auto-retry a failed Metis put (currently re-syncs on the note's next edit).
+- Deletion/tombstone story (Metis is append-only; deleted notes persist there).
+- A test that a hung metis CLI is actually killed by the `timeout` wrapper.
+
+**Checklist items (Phase 4):**
+- A `(move_id, position)` unique index / row-lock for concurrent-tab position races.
+- Pagination / lazy-load for very long checklists (and the notes list).
