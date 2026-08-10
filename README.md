@@ -1,5 +1,11 @@
 # Moves
 
+> ⚠️ **Retired (2026-08-10).** This Rails prototype has been retired and consolidated
+> into its successor — a more polished implementation of the same idea. It is
+> preserved read-only as a reference (its auth, token API, notes/brain sync,
+> subtasks, agent-delegation loop, and PWA work are the source for porting).
+> No further development happens here.
+
 A minimalist task manager with hidden decision-intelligence. Moves helps you capture tasks quickly, score them with expected-value logic, and surface the best actions to take right now.
 
 ![Ruby](https://img.shields.io/badge/Ruby-3.2+-CC342D?logo=ruby&logoColor=white)
